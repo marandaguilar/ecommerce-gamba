@@ -5,7 +5,7 @@ import { ResponseType } from "@/types/response";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import SkeletonSchema from "./skeletonSchema";
 import { ProductType } from "@/types/product";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent } from "./ui/card";
 import { Expand, ShoppingCart } from "lucide-react";
 import IconButton from "./icon-button";
 import { useRouter } from "next/navigation";

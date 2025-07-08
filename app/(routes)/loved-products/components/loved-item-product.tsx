@@ -1,8 +1,6 @@
 import { useLovedProducts } from "@/hooks/use-loved-products"
 import { ProductType } from "@/types/product"
-import { useRouter } from "next/navigation"
 import { useCart } from "@/hooks/use-cart"
-import IconButton from "@/components/icon-button"
 import { formatPrice } from "@/lib/formatPrice"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -16,7 +14,6 @@ interface LovedItemProductProps {
 
 const LovedItemProduct = (props: LovedItemProductProps) => {
     const { product } = props
-    const router = useRouter()
     const { removeLovedItem } = useLovedProducts()
     const { addItem } = useCart()
 

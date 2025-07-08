@@ -2,7 +2,7 @@
 
 import { useGetCategoryProduct } from "@/api/getCategoryProduct"
 import { ResponseType } from "@/types/response"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import { Separator } from "@/components/ui/separator"
 import FiltersControlsCategory from "./components/filters-controls-category"
 import SkeletonSchema from "@/components/skeletonSchema"
@@ -13,11 +13,9 @@ import { useState } from "react"
 export default function Page() {
     const params = useParams()
     const { categorySlug } = params as { categorySlug: string }
-    const { result, loading, error }: ResponseType = useGetCategoryProduct(categorySlug) 
+    const { result, loading }: ResponseType = useGetCategoryProduct(categorySlug) 
     const [filteredPurchase, setFilteredPurchase] = useState<string>("")
     
-    const router = useRouter()
-
     const filteredProducts = result?.filter((product: ProductType) => {
         if (filteredPurchase === "") return true
         return product.purchase === filteredPurchase

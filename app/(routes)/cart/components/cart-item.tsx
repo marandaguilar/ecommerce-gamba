@@ -1,8 +1,7 @@
 import { useCart } from "@/hooks/use-cart"
 import { formatPrice } from "@/lib/formatPrice"
 import { ProductType } from "@/types/product"
-import { Minus, X } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import ProductCategories from "@/components/shared/product-categories"
 import ProductImageMiniature from "@/components/shared/product-image-miniature"
@@ -13,7 +12,6 @@ interface CartItemProps {
 
 const CartItem = (props: CartItemProps) => {
     const { product } = props
-    const router = useRouter()
     const { removeItem } = useCart()
 
     return (

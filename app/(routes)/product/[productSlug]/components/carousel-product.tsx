@@ -1,6 +1,5 @@
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 import { ImageType } from "@/types/product"
-import Image from "next/image"
 
 interface CarouselProductProps {
    images?: ImageType[] | null

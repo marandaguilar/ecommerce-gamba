@@ -15,7 +15,7 @@ export type InfoProductProps = {
 const InfoProduct = (props: InfoProductProps) => {
     const { product }: InfoProductProps = props
     const { addItem } = useCart()
-    const { addLovedItem, removeLovedItem } = useLovedProducts()
+    const { addLovedItem } = useLovedProducts()
     
     return (
         <div className="px-6">
