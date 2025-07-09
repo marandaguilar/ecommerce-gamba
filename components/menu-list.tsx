@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
+import * as React from "react";
+import Link from "next/link";
 
 import {
   NavigationMenu,
@@ -11,7 +11,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu"
+} from "@/components/ui/navigation-menu";
 
 const MenuList = () => {
   return (
@@ -20,33 +20,33 @@ const MenuList = () => {
         <NavigationMenuItem>
           <NavigationMenuTrigger>Sobre Nosotros</NavigationMenuTrigger>
           <NavigationMenuContent>
-            <ul className="grid gap-2 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
+            <ul className="gap-2 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
               <li className="row-span-3">
                 <NavigationMenuLink asChild>
                   <Link
                     className="from-muted/50 to-muted flex h-full w-full flex-col justify-end rounded-md bg-linear-to-b p-6 no-underline outline-hidden select-none focus:shadow-md"
                     href="/"
                   >
-                    <div className="mt-4 mb-2 text-lg font-medium">
-                      GAMBA
-                    </div>
+                    <div className="mt-4 mb-2 text-lg font-medium">GAMBA</div>
                     <p className="text-muted-foreground text-sm leading-tight">
-                      Somos una empresa dedicada a la venta de productos de limpieza.
+                      Somos una empresa dedicada a la venta de productos de
+                      limpieza.
                     </p>
                   </Link>
                 </NavigationMenuLink>
               </li>
-              <ListItem href="/shop" title="Tienda">
+              {/* Añadir grid en el /ul si se quieren añadir */}
+              {/*<ListItem href="/shop" title="Tienda">
                 Accede a toda tu informacion, tus pedidos y mucho más.
-              </ListItem>
-              <ListItem href="/offers" title="Ofertas">
+              </ListItem>*/}
+              {/*<ListItem href="/offers" title="Ofertas">
                 Seccion dedicada a promociones y descuentos especiales.
-              </ListItem>
+              </ListItem>*/}
             </ul>
           </NavigationMenuContent>
         </NavigationMenuItem>
         <NavigationMenuItem>
-          <NavigationMenuTrigger>Productos</NavigationMenuTrigger>
+          <NavigationMenuTrigger>Categorias</NavigationMenuTrigger>
           <NavigationMenuContent>
             <ul className="grid w-[400px] gap-2 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
               {components.map((component) => (
@@ -63,42 +63,38 @@ const MenuList = () => {
         </NavigationMenuItem>
         <NavigationMenuItem>
           <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-            <Link href="/docs">Accesorios</Link>
+            <Link href="/docs">Productos</Link>
           </NavigationMenuLink>
         </NavigationMenuItem>
       </NavigationMenuList>
     </NavigationMenu>
-  )
-}
+  );
+};
 
 export default MenuList;
 
 const components: { title: string; href: string; description: string }[] = [
-    {
-      title: "Utensilios",
-      href: "/category/utensilios",
-      description:
-        "Aparatos de limpieza.",
-    },
-    {
-      title: "Quimicos",
-      href: "/category/quimicos",
-      description:
-        "Quimicos para la limpieza.",
-    },
-    {
-      title: "Celulosa",
-      href: "/category/celulosa",
-      description:
-        "Celulosa para la limpieza.",
-    },
-    {
-      title: "Proteccion",
-      href: "/category/proteccion",
-      description: "Proteccion para la limpieza.",
-    },
-  ]
-  
+  {
+    title: "Utensilios",
+    href: "/category/utensilios",
+    description: "Aparatos de limpieza.",
+  },
+  {
+    title: "Quimicos",
+    href: "/category/quimicos",
+    description: "Quimicos para la limpieza.",
+  },
+  {
+    title: "Celulosa",
+    href: "/category/celulosa",
+    description: "Celulosa para la limpieza.",
+  },
+  {
+    title: "Miscelaneos",
+    href: "/category/miscelaneos",
+    description: "Miscelaneos para la limpieza.",
+  },
+];
 
 function ListItem({
   title,
@@ -117,5 +113,5 @@ function ListItem({
         </Link>
       </NavigationMenuLink>
     </li>
-  )
+  );
 }
