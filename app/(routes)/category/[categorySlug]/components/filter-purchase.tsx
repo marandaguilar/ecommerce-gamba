@@ -11,6 +11,8 @@ const FilterPurchase = (props: FilterPurchaseProps) => {
     const { setFilteredPurchase } = props
     const { result, loading }: FilterTypes = useGetProductField()
 
+    console.log("result",result)
+
     return (
         <div className="my-5">
             <p className="mb-3 font-bold">Tipo de compra</p>

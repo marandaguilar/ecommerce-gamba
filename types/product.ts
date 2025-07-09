@@ -14,6 +14,7 @@ export type ProductType = {
     isFeatured: boolean
     purchase: string
     price: number
+    price_mayoreo: number
     images?: ImageType[]
     category?: CategoryType
 }
