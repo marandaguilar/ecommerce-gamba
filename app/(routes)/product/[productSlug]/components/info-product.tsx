@@ -21,23 +21,20 @@ const InfoProduct = (props: InfoProductProps) => {
     <div className="px-6">
       <div className="justify-between mb-3 sm:flex">
         <h1 className="textl-2xl">{product.productName}</h1>
-        <ProductCategories
-          category={product.category?.categoryName || ""}
-          purchase={product.purchase || ""}
-        />
+        <ProductCategories category={product.category?.categoryName || ""} />
       </div>
       <Separator className="my-4" />
       <div>
         <p className="text-sm text-gray-500">{product.description}</p>
       </div>
       <Separator className="my-4" />
-      <div className="flex items-baseline gap-2">
-        <h4 className="text-xl">Precio menudeo:</h4>
-        <p className="text-2xl">{formatPrice(product.price)}</p>
+      <div className="flex items-baseline gap-x-2">
+        <h4 className="text-lg">Precio menudeo:</h4>
+        <p className="text-lg">{formatPrice(product.price)}</p>
       </div>
       <div className="flex items-baseline gap-2">
-        <h4 className="text-xl">Precio mayoreo:</h4>
-        <p className="text-2xl">{formatPrice(product.price_mayoreo)}</p>
+        <h4 className="text-lg">Precio mayoreo:</h4>
+        <p className="text-lg">{formatPrice(product.price_mayoreo)}</p>
       </div>
       <div className="flex items-center gap-5">
         <Button className="w-full" onClick={() => addItem(product)}>
