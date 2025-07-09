@@ -1,8 +1,6 @@
 import { useLovedProducts } from "@/hooks/use-loved-products";
 import { ProductType } from "@/types/product";
-import { useCart } from "@/hooks/use-cart";
 import { formatPrice } from "@/lib/formatPrice";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 import ProductCategories from "@/components/shared/product-categories";
@@ -15,7 +13,7 @@ interface LovedItemProductProps {
 const LovedItemProduct = (props: LovedItemProductProps) => {
   const { product } = props;
   const { removeLovedItem } = useLovedProducts();
-  const { addItem } = useCart();
+  // const { addItem } = useCart();
 
   return (
     <li className="flex py-6 border-b">
@@ -25,17 +23,23 @@ const LovedItemProduct = (props: LovedItemProductProps) => {
       />
       <div className="flex justify-between flex-1 px-6">
         <div>
-          <div>
+          <div className="mb-2">
             <h2 className="text-lg font-bold">{product.productName}</h2>
-            <p className="font-bold">{formatPrice(product.price)}</p>
+            <p className="text-md">{product.description}</p>
+            <p className="font-bold text-sm">
+              Precio menudeo: {formatPrice(product.price)}
+            </p>
+            <p className="font-bold text-sm">
+              Precio mayoreo: {formatPrice(product.price_mayoreo)}
+            </p>
           </div>
-          <ProductCategories category={product.category?.categoryName || ""} />
-          <Button
+          <ProductCategories category={product.category} />
+          {/* <Button
             className="mt-5 rounded-full"
             onClick={() => addItem(product)}
           >
             Agregar al carrito
-          </Button>
+          </Button> */}
         </div>
         <div>
           <button

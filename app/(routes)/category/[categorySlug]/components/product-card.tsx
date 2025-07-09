@@ -6,9 +6,10 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import IconButton from "@/components/icon-button";
-import { Expand, ShoppingCart } from "lucide-react";
+import { Expand, Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/formatPrice";
+import { useLovedProducts } from "@/hooks/use-loved-products";
 
 type ProductCardProps = {
   product: ProductType;
@@ -17,6 +18,7 @@ type ProductCardProps = {
 const ProductCard = (props: ProductCardProps) => {
   const { product } = props;
   const router = useRouter();
+  const { addLovedItem } = useLovedProducts();
 
   return (
     <Link
@@ -42,9 +44,14 @@ const ProductCard = (props: ProductCardProps) => {
                     onClick={() => router.push(`/product/${product.slug}`)}
                     icon={<Expand size={20} className="text-gray-600" />}
                   />
-                  <IconButton
+                  {/* <IconButton
                     onClick={() => console.log("product")}
                     icon={<ShoppingCart size={20} className="text-gray-600" />}
+                  /> */}
+                  <IconButton
+                    onClick={() => addLovedItem(product)}
+                    icon={<Heart size={20} className="text-gray-600" />}
+                    className="transition duration-300 hover:fill-black cursor-pointer"
                   />
                 </div>
               </div>

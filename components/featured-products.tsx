@@ -12,16 +12,15 @@ import {
 import SkeletonSchema from "./skeletonSchema";
 import { ProductType } from "@/types/product";
 import { Card, CardContent } from "./ui/card";
-import { Expand, ShoppingCart } from "lucide-react";
+import { Expand } from "lucide-react";
 import IconButton from "./icon-button";
 import { useRouter } from "next/navigation";
-import { useCart } from "@/hooks/use-cart";
 import ProductCategories from "./shared/product-categories";
+import { MessageCircle } from "lucide-react";
 
 const FeaturedProducts = () => {
   const { loading, result }: ResponseType = useGetFeaturedProducts();
   const router = useRouter();
-  const { addItem } = useCart();
 
   return (
     <div className="max-w-6xl py-4 mx-auto sm:py-16 sm:px-24">
@@ -55,10 +54,15 @@ const FeaturedProducts = () => {
                               className="text-gray-600"
                             />
                             <IconButton
+                              onClick={() => console.log("Mensaje")}
+                              icon={<MessageCircle size={20} />}
+                              className=" bg-green-800 text-white"
+                            />
+                            {/* <IconButton
                               onClick={() => addItem(product)}
                               icon={<ShoppingCart size={20} />}
                               className="text-gray-600"
-                            />
+                            /> */}
                           </div>
                         </div>
                       </CardContent>
@@ -67,9 +71,7 @@ const FeaturedProducts = () => {
                           {productName}
                         </h3>
                         <div className="flex-shrink-0 flex flex-wrap gap-2">
-                          <ProductCategories
-                            category={category?.categoryName || ""}
-                          />
+                          <ProductCategories category={category} />
                         </div>
                       </div>
                     </Card>

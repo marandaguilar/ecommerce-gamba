@@ -24,7 +24,7 @@ const CartItem = (props: CartItemProps) => {
         <div>
           <h2 className="text-lg font-bold">{product.productName}</h2>
           <p className="font-bold">{formatPrice(product.price)}</p>
-          <ProductCategories category={product.category?.categoryName || ""} />
+          <ProductCategories category={product.category} />
         </div>
         <div>
           <button
