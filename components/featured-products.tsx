@@ -16,11 +16,13 @@ import { Expand } from "lucide-react";
 import IconButton from "./icon-button";
 import { useRouter } from "next/navigation";
 import ProductCategories from "./shared/product-categories";
-import { MessageCircle } from "lucide-react";
+import { useLovedProducts } from "@/hooks/use-loved-products";
+import { Heart } from "lucide-react";
 
 const FeaturedProducts = () => {
   const { loading, result }: ResponseType = useGetFeaturedProducts();
   const router = useRouter();
+  const { addLovedItem } = useLovedProducts();
 
   return (
     <div className="max-w-6xl py-4 mx-auto sm:py-16 sm:px-24">
@@ -44,6 +46,7 @@ const FeaturedProducts = () => {
                           src={`${process.env.NEXT_PUBLIC_BACKEND_URL}${
                             images?.[0]?.url || ""
                           }`}
+                          className="w-full h-full rounded-lg"
                           alt="image featured"
                         />
                         <div className="absolute w-full px-6 transition duration-200 opacity-0 group-hover:opacity-100 bottom-5">
@@ -54,9 +57,9 @@ const FeaturedProducts = () => {
                               className="text-gray-600"
                             />
                             <IconButton
-                              onClick={() => console.log("Mensaje")}
-                              icon={<MessageCircle size={20} />}
-                              className=" bg-green-800 text-white"
+                              onClick={() => addLovedItem(product)}
+                              icon={<Heart size={20} />}
+                              className="text-gray-600 transition duration-300 hover:fill-black cursor-pointer"
                             />
                             {/* <IconButton
                               onClick={() => addItem(product)}

@@ -46,7 +46,14 @@ const InfoProduct = (props: InfoProductProps) => {
         </Button> */}
         <Button
           className="w-full bg-green-600 text-white text-md hover:bg-green-700"
-          onClick={() => console.log("Mensaje")}
+          onClick={() => {
+            const phoneNumber = "+524494056193";
+            const message = `Quiero más información de ${product.productName}`;
+            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
+              message
+            )}`;
+            window.open(whatsappUrl, "_blank");
+          }}
         >
           <MessageCircle size={20} />
           <span>Mandanos un mensaje</span>

@@ -23,9 +23,9 @@ export default function Page() {
       )}
       <Separator />
 
-      <div className="sm:flex sm:justify-between">
+      <div className="sm:flex items-center justify-center">
         <div className="grid gap-5 mt-8 sm:grid-cols-2 md:grid-cols-4 md:gap-10">
-          {loading && <SkeletonSchema grid={3} />}
+          {loading && <SkeletonSchema grid={4} />}
           {result !== null &&
             !loading &&
             result.map((product: ProductType) => (
