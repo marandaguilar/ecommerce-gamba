@@ -85,6 +85,11 @@ const components: { title: string; href: string; description: string }[] = [
     description: "Quimicos para la limpieza.",
   },
   {
+    title: "Fibras",
+    href: "/category/fibras",
+    description: "Fibras para la limpieza.",
+  },
+  {
     title: "Celulosa",
     href: "/category/celulosa",
     description: "Celulosa para la limpieza.",
