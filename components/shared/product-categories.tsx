@@ -11,18 +11,20 @@ const getCategoryColor = (
 ) => {
   if (!categoryName) return "bg-gray-500";
   const categoryColorMap: { [key: string]: string } = {
-    quimicos: "bg-lime-700 dark:bg-lime-400",
-    químicos: "bg-lime-700 dark:bg-lime-400",
-    Quimicos: "bg-lime-700 dark:bg-lime-400",
-    Químicos: "bg-lime-700 dark:bg-lime-400",
-    miscelaneos: "bg-purple-700 dark:bg-purple-400",
-    misceláneos: "bg-purple-700 dark:bg-purple-400",
+    quimicos: "bg-lime-600 dark:bg-lime-400",
+    químicos: "bg-lime-600 dark:bg-lime-400",
+    Quimicos: "bg-lime-600 dark:bg-lime-400",
+    Químicos: "bg-lime-600 dark:bg-lime-400",
+    miscelaneos: "bg-purple-600 dark:bg-purple-400",
+    misceláneos: "bg-purple-600 dark:bg-purple-400",
     Miscelaneos: "bg-purple-700 dark:bg-purple-400",
     Misceláneos: "bg-purple-700 dark:bg-purple-400",
     utensilios: "bg-red-700 dark:bg-red-400",
     Utensilios: "bg-red-700 dark:bg-red-400",
     celulosa: "bg-sky-700 dark:bg-sky-400",
     Celulosa: "bg-sky-700 dark:bg-sky-400",
+    fibras: "bg-green-700 dark:bg-green-400",
+    Fibras: "bg-green-700 dark:bg-green-400",
   };
 
   const specificColor = categoryColorMap[categoryName];
@@ -49,6 +51,7 @@ const getCategoryColor = (
     "bg-lime-700 dark:bg-lime-400",
     "bg-sky-700 dark:bg-sky-400",
     "bg-purple-700 dark:bg-purple-400",
+    "bg-green-700 dark:bg-green-400",
   ];
 
   // Usar el ID de la categoría si está disponible, sino usar el nombre
