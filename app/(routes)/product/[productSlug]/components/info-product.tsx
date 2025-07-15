@@ -56,7 +56,7 @@ const InfoProduct = (props: InfoProductProps) => {
           }}
         >
           <MessageCircle size={20} />
-          <span>Mandanos un mensaje</span>
+          <span>Mándanos un mensaje</span>
         </Button>
         <IconButton
           onClick={() => addLovedItem(product)}

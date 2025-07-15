@@ -35,7 +35,7 @@ export default function LovedProductsPage() {
             }}
           >
             <MessageCircle size={20} />
-            <span>Mandanos un mensaje</span>
+            <span>Mándanos un mensaje</span>
           </Button>
         </div>
       </div>
