@@ -21,8 +21,8 @@ const getCategoryColor = (
     Misceláneos: "bg-purple-700 dark:bg-purple-400",
     utensilios: "bg-red-700 dark:bg-red-400",
     Utensilios: "bg-red-700 dark:bg-red-400",
-    celulosa: "bg-sky-700 dark:bg-sky-400",
-    Celulosa: "bg-sky-700 dark:bg-sky-400",
+    papel: "bg-sky-700 dark:bg-sky-400",
+    Papel: "bg-sky-700 dark:bg-sky-400",
     fibras: "bg-green-700 dark:bg-green-400",
     Fibras: "bg-green-700 dark:bg-green-400",
   };

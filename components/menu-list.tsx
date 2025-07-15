@@ -77,27 +77,27 @@ const components: { title: string; href: string; description: string }[] = [
   {
     title: "Utensilios",
     href: "/category/utensilios",
-    description: "Aparatos de limpieza.",
+    description: "Escobas, trapeadores, cubetas, etc.",
   },
   {
     title: "Quimicos",
     href: "/category/quimicos",
-    description: "Quimicos para la limpieza.",
+    description: "Cloro, Fabuloso, pastillas de cloro, etc.",
   },
   {
     title: "Fibras",
     href: "/category/fibras",
-    description: "Fibras para la limpieza.",
+    description: "Esponjas, fibras metalicas, etc.",
   },
   {
-    title: "Celulosa",
-    href: "/category/celulosa",
-    description: "Celulosa para la limpieza.",
+    title: "Papel",
+    href: "/category/papel",
+    description: "Papel, sanitas, etc.",
   },
   {
     title: "Miscelaneos",
     href: "/category/miscelaneos",
-    description: "Miscelaneos para la limpieza.",
+    description: "Miscelaneos de limpieza.",
   },
 ];
 
