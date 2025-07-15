@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 
-import { Heart } from "lucide-react";
+import { Heart, MessageCircle } from "lucide-react";
 
 import MenuList from "./menu-list";
 import ItemsMenuMobile from "./items-menu-mobile";
@@ -38,7 +38,19 @@ const Navbar = () => {
               <span className="text-sm">{cart.items.length}</span>
             </div>
           )} */}
-
+          <MessageCircle
+            size={25}
+            strokeWidth={1}
+            className="cursor-pointer text-green-600 fill-green-600"
+            onClick={() => {
+              const phoneNumber = "+524494056193";
+              const message = `Quiero más información`;
+              const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
+                message
+              )}`;
+              window.open(whatsappUrl, "_blank");
+            }}
+          />
           <Heart
             strokeWidth={1}
             className={`cursor-pointer ${
