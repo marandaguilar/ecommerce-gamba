@@ -13,8 +13,8 @@ const urbanist = Urbanist({
 });
 
 export const metadata: Metadata = {
-  title: "Gamba E-commerce",
-  description: "Bienvenido a Gamba E-commerce",
+  title: "Gamba",
+  description: "Catálogo de productos de Gamba",
 };
 
 export default function RootLayout({

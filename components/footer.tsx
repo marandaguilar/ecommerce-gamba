@@ -12,11 +12,6 @@ const dataFooter = [
     title: "Productos",
     href: "/products",
   },
-  {
-    id: 3,
-    title: "Mi cuenta",
-    href: "#",
-  },
 ];
 
 const Footer = () => {

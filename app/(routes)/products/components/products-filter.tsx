@@ -56,7 +56,7 @@ export default function ProductsFilter({
         <select
           value={selectedCategory || "all"}
           onChange={handleCategoryChange}
-          className="w-[210px] pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+          className="w-[210px] pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white dark:text-black"
         >
           <option value="all">Todas las categorías</option>
           {uniqueCategories.map((category: CategoryType) => (

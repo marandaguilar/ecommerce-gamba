@@ -1,22 +1,21 @@
-import Link from "next/link"
-import { buttonVariants } from "./ui/button"
+import Link from "next/link";
+import { buttonVariants } from "./ui/button";
 
 const BannerProduct = () => {
-    return (
-        <>
-            <div className="mt-4 text-center">
-                <p>Precios bajos</p>
-                <h4 className="mt-2 text-5xl font-extrabold uppercase">Productos de calidad</h4>
-                <p className="my-2 text-lg">Lo mejor en limpieza y desinfección</p>
-                <Link href="#" className={buttonVariants({ variant: "default" })}>
-                    Ver productos
-                </Link>
-            </div>
-            <div className="h-[350px] bg-cover lg:h-[900px] bg-[url('/limpiando.jpg')] bg-center mt-5">
+  return (
+    <>
+      <div className="mt-4 text-center">
+        <p>Precios bajos</p>
+        <h4 className="mt-2 text-5xl font-extrabold uppercase">
+          Productos de calidad
+        </h4>
+        <p className="my-2 text-lg">Lo mejor en limpieza y desinfección</p>
+        <Link href="#" className={buttonVariants({ variant: "default" })}>
+          Ver productos
+        </Link>
+      </div>
+    </>
+  );
+};
 
-            </div>
-        </>
-    )
-}
-
-export default BannerProduct
+export default BannerProduct;
