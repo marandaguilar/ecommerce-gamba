@@ -21,10 +21,7 @@ const ProductCard = (props: ProductCardProps) => {
   const { addLovedItem } = useLovedProducts();
 
   return (
-    <Link
-      href={`/product/${product.slug}`}
-      className="relative p-2 transition-all duration-100 rounded-lg hover:shadow-lg"
-    >
+    <div className="relative p-2 transition-all duration-100 rounded-lg hover:shadow-lg">
       <Carousel
         opts={{
           align: "start",
@@ -72,7 +69,7 @@ const ProductCard = (props: ProductCardProps) => {
           {formatPrice(product.price_mayoreo)}
         </p>
       </div>
-    </Link>
+    </div>
   );
 };
 

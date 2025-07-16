@@ -9,6 +9,7 @@ import ProductCard from "./components/carousel-products";
 import ProductsFilter from "./components/products-filter";
 import { ProductType } from "@/types/product";
 import { Button } from "@/components/ui/button";
+import ProductsCounter from "@/components/shared/products-counter";
 
 export default function Page() {
   const { result: products, loading: productsLoading }: ResponseType =
@@ -114,14 +115,11 @@ export default function Page() {
       )}
 
       {/* Contador de productos */}
-      {visibleFilteredProducts !== null && !productsLoading && (
-        <div className="flex justify-end mt-8 pr-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            {visibleFilteredProducts.length} de {filteredProducts?.length || 0}{" "}
-            productos mostrados
-          </p>
-        </div>
-      )}
+      <ProductsCounter
+        visibleCount={visibleFilteredProducts?.length || 0}
+        totalCount={filteredProducts?.length || 0}
+        isLoading={productsLoading}
+      />
     </div>
   );
 }

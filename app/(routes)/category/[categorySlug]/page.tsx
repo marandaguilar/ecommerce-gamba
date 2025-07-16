@@ -9,6 +9,8 @@ import SkeletonSchema from "@/components/skeletonSchema";
 import ProductCard from "./components/product-card";
 import CategorySearch from "./components/search";
 import { ProductType } from "@/types/product";
+import { Button } from "@/components/ui/button";
+import ProductsCounter from "@/components/shared/products-counter";
 
 export default function Page() {
   const params = useParams();
@@ -16,6 +18,7 @@ export default function Page() {
 
   const { result, loading }: ResponseType = useGetCategoryProduct(categorySlug);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [visibleProducts, setVisibleProducts] = useState<number>(25);
 
   // Filtrar productos por término de búsqueda
   const filteredProducts = useMemo(() => {
@@ -33,9 +36,23 @@ export default function Page() {
     );
   }, [result, searchTerm]);
 
+  // Obtener solo los productos visibles
+  const visibleFilteredProducts = useMemo(() => {
+    if (!filteredProducts) return null;
+    return filteredProducts.slice(0, visibleProducts);
+  }, [filteredProducts, visibleProducts]);
+
   const handleSearchChange = (term: string) => {
     setSearchTerm(term);
+    setVisibleProducts(25); // Resetear a 25 productos cuando cambie la búsqueda
   };
+
+  const handleLoadMore = () => {
+    setVisibleProducts((prev) => prev + 25);
+  };
+
+  const hasMoreProducts =
+    filteredProducts && visibleProducts < filteredProducts.length;
 
   return (
     <div className="max-m-6xl py-4 mx-auto sm:py-16 sm:px-24">
@@ -55,18 +72,37 @@ export default function Page() {
       <div className="sm:flex items-center justify-center">
         <div className="grid gap-5 mt-8 sm:grid-cols-2 md:grid-cols-4 md:gap-10">
           {loading && <SkeletonSchema grid={4} />}
-          {filteredProducts !== null &&
+          {visibleFilteredProducts !== null &&
             !loading &&
-            filteredProducts.map((product: ProductType) => (
+            visibleFilteredProducts.map((product: ProductType) => (
               <ProductCard key={product.id} product={product} />
             ))}
-          {filteredProducts !== null &&
+          {visibleFilteredProducts !== null &&
             !loading &&
-            filteredProducts.length === 0 && (
+            visibleFilteredProducts.length === 0 && (
               <p>No hay productos que coincidan con la búsqueda</p>
             )}
         </div>
       </div>
+
+      {/* Botón "Ver más" */}
+      {hasMoreProducts && !loading && (
+        <div className="flex justify-center mt-8">
+          <Button
+            onClick={handleLoadMore}
+            className="px-8 py-2 text-white dark:text-black rounded-lg transition-colors"
+          >
+            Ver más
+          </Button>
+        </div>
+      )}
+
+      {/* Contador de productos */}
+      <ProductsCounter
+        visibleCount={visibleFilteredProducts?.length || 0}
+        totalCount={filteredProducts?.length || 0}
+        isLoading={loading}
+      />
     </div>
   );
 }
