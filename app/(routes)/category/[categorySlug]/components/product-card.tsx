@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ImageType, ProductType } from "@/types/product";
 import {
   Carousel,
