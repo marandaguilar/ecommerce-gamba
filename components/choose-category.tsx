@@ -28,6 +28,7 @@ const ChooseCategory = () => {
                   src={category.mainImage.url}
                   alt={category.categoryName}
                   className="max-w-[230px] transition duration-300 ease-in-out rounded-lg hover:scale-110"
+                  loading="lazy"
                 />
               )}
               <p className="absolute w-full py-2 text-center text-black text-lg bottom-5 font-bold backdrop-blur-lg">

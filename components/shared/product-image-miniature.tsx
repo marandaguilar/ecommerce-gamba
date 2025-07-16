@@ -18,6 +18,7 @@ const ProductImageMiniature = (props: ProductImageMiniatureProps) => {
         src={url}
         alt={slug}
         className="w-24 h-24 rounded-md overflow-hidden sm:w-auto sm:h-32"
+        loading="lazy"
       />
     </div>
   );

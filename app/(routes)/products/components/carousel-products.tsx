@@ -31,7 +31,12 @@ const ProductCard = (props: ProductCardProps) => {
         <CarouselContent className="rounded-lg">
           {product.images?.map((images: ImageType) => (
             <CarouselItem key={images.id} className="group">
-              <img src={images.url} alt="Image" className="rounded-lg" />
+              <img
+                src={images.url}
+                alt="Image"
+                className="rounded-lg"
+                loading="lazy"
+              />
               <div className="absolute w-full px-6 transition duration-200 opacity-0 group-hover:opacity-100 bottom-5">
                 <div className="flex justify-center gap-x-6">
                   <IconButton

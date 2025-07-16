@@ -1,6 +1,6 @@
 "use client";
 
-import { useGetFeaturedProducts } from "@/api/useGetFeaturedProducts";
+import { useGetRebajaProducts } from "@/api/useGetRebajaProducts";
 import { ResponseType } from "@/types/response";
 import {
   Carousel,
@@ -19,14 +19,14 @@ import ProductCategories from "./shared/product-categories";
 import { useLovedProducts } from "@/hooks/use-loved-products";
 import { Heart } from "lucide-react";
 
-const FeaturedProducts = () => {
-  const { loading, result }: ResponseType = useGetFeaturedProducts();
+const RebajaProducts = () => {
+  const { loading, result }: ResponseType = useGetRebajaProducts();
   const router = useRouter();
   const { addLovedItem } = useLovedProducts();
 
   return (
     <div className="max-w-6xl py-4 mx-auto sm:py-16 sm:px-24">
-      <h3 className="px-6 text-3xl sm:pb-8">Productos destacados</h3>
+      <h3 className="px-6 text-3xl sm:pb-8">Productos en rebaja</h3>
 
       <Carousel>
         <CarouselContent className="ml-2 md:-ml-4">
@@ -46,7 +46,7 @@ const FeaturedProducts = () => {
                         <img
                           src={images?.[0]?.url || ""}
                           className="w-full h-full rounded-lg"
-                          alt="image featured"
+                          alt="image rebaja"
                           loading="lazy"
                         />
                         <div className="absolute w-full px-6 transition duration-200 opacity-0 group-hover:opacity-100 bottom-5">
@@ -90,4 +90,4 @@ const FeaturedProducts = () => {
   );
 };
 
-export default FeaturedProducts;
+export default RebajaProducts;

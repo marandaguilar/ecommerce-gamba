@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-export function useGetFeaturedProducts() {
-  const url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/products?filters[isFeatured][$eq]=true&populate=*`;
+export function useGetRebajaProducts() {
+  const url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/products?filters[isRebaja][$eq]=true&populate=*`;
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
