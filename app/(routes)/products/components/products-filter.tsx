@@ -50,13 +50,13 @@ export default function ProductsFilter({
   };
 
   return (
-    <div className="flex items-center gap-4 mb-6">
-      <div className="relative">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
+      <div className="relative w-full sm:w-auto">
         <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
         <select
           value={selectedCategory || "all"}
           onChange={handleCategoryChange}
-          className="w-[210px] pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white dark:text-black"
+          className="w-full sm:w-[210px] pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white dark:text-black"
         >
           <option value="all">Todas las categorías</option>
           {uniqueCategories.map((category: CategoryType) => (
@@ -67,14 +67,14 @@ export default function ProductsFilter({
         </select>
       </div>
 
-      <div className="relative">
+      <div className="relative w-full sm:w-auto">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
         <input
           type="text"
           placeholder="Buscar productos..."
           value={searchTerm}
           onChange={handleSearchChange}
-          className="w-[280px] pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full sm:w-[280px] pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
     </div>

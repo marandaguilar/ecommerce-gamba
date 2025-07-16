@@ -70,24 +70,26 @@ export default function Page() {
 
   return (
     <div className="max-m-6xl py-4 mx-auto sm:py-16 sm:px-24">
-      <div className="mb-6 flex justify-between items-center">
-        <h1 className="text-3xl font-medium mb-4">Todos los productos</h1>
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h1 className="text-3xl font-medium">Todos los productos</h1>
 
-        {/* Filtro de categorías y búsqueda */}
-        {products !== null && !productsLoading && (
-          <ProductsFilter
-            products={products}
-            selectedCategory={selectedCategory}
-            onCategoryChange={handleCategoryChange}
-            searchTerm={searchTerm}
-            onSearchChange={handleSearchChange}
-          />
-        )}
+          {/* Filtro de categorías y búsqueda */}
+          {products !== null && !productsLoading && (
+            <ProductsFilter
+              products={products}
+              selectedCategory={selectedCategory}
+              onCategoryChange={handleCategoryChange}
+              searchTerm={searchTerm}
+              onSearchChange={handleSearchChange}
+            />
+          )}
+        </div>
       </div>
       <Separator />
 
-      <div className="sm:flex items-center justify-center">
-        <div className="grid gap-5 mt-8 sm:grid-cols-2 md:grid-cols-5 md:gap-10 justify-center items-center">
+      <div className="flex justify-center">
+        <div className="grid gap-5 mt-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-5 md:gap-10 max-w-xs sm:max-w-none mx-auto">
           {productsLoading && <SkeletonSchema grid={5} />}
           {visibleFilteredProducts !== null &&
             !productsLoading &&

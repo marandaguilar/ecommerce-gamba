@@ -57,20 +57,22 @@ export default function Page() {
   return (
     <div className="max-m-6xl py-4 mx-auto sm:py-16 sm:px-24">
       {result !== null && !loading && (
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-medium">
-            {result[0].category.categoryName}
-          </h1>
-          <CategorySearch
-            searchTerm={searchTerm}
-            onSearchChange={handleSearchChange}
-          />
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h1 className="text-3xl font-medium">
+              {result[0].category.categoryName}
+            </h1>
+            <CategorySearch
+              searchTerm={searchTerm}
+              onSearchChange={handleSearchChange}
+            />
+          </div>
         </div>
       )}
       <Separator />
 
-      <div className="sm:flex items-center justify-center">
-        <div className="grid gap-5 mt-8 sm:grid-cols-2 md:grid-cols-4 md:gap-10">
+      <div className="flex justify-center">
+        <div className="grid gap-5 mt-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 md:gap-10 max-w-xs sm:max-w-none mx-auto">
           {loading && <SkeletonSchema grid={4} />}
           {visibleFilteredProducts !== null &&
             !loading &&
