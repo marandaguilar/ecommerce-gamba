@@ -56,7 +56,7 @@ const InfoProduct = (props: InfoProductProps) => {
           }}
         >
           <MessageCircle size={20} />
-          <span>Mándanos un mensaje</span>
+          <span>Mándanos un mensaje en WhatsApp</span>
         </Button>
         <IconButton
           onClick={() => addLovedItem(product)}
