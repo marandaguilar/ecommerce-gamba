@@ -16,16 +16,22 @@ const Navbar = () => {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
       <div className="flex justify-between items-center p-4 mx-auto cursor-pointer sm:max-w-4xl md:max-w-6xl">
-        <h1 className="text-3xl font-bold" onClick={() => router.push("/")}>
-          GAMBA
-        </h1>
+        <div className="text-center">
+          <h1
+            className="text-3xl font-bold text-[#0d4c99]"
+            onClick={() => router.push("/")}
+          >
+            GAMBA
+          </h1>
+          <p className="text-sm font-semibold">1er aniversario</p>
+        </div>
         <div className="items-center justify-center hidden sm:flex">
           <MenuList />
         </div>
         <div className="flex sm:hidden">
           <ItemsMenuMobile />
         </div>
-        <div className="flex items-center justify-center gap-2 sm:gap-7">
+        <div className="flex items-center justify-center gap-3 sm:gap-7">
           {/* {cart.items.length === 0 ? (
             <ShoppingCart
               strokeWidth={1}
