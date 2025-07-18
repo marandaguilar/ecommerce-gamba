@@ -9,10 +9,12 @@ import ProductCard from "./components/carousel-products";
 import ProductsFilter from "./components/products-filter";
 import { ProductType } from "@/types/product";
 import ProductsCounter from "@/components/shared/products-counter";
+import { Button } from "@/components/ui/button";
 
 export default function Page() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [displayedCount, setDisplayedCount] = useState<number>(25);
 
   const { result: allProducts, loading }: ResponseType = useGetAllProducts(); // Cargar muchos productos de una vez
 
@@ -43,13 +45,26 @@ export default function Page() {
     return filtered;
   }, [allProducts, selectedCategory, searchTerm]);
 
+  // Reset displayed count when filters change
+  const displayedProducts = useMemo(() => {
+    return filteredProducts.slice(0, displayedCount);
+  }, [filteredProducts, displayedCount]);
+
   const handleCategoryChange = (categoryId: string | null) => {
     setSelectedCategory(categoryId);
+    setDisplayedCount(25); // Reset to initial count
   };
 
   const handleSearchChange = (term: string) => {
     setSearchTerm(term);
+    setDisplayedCount(25); // Reset to initial count
   };
+
+  const handleLoadMore = () => {
+    setDisplayedCount((prev) => Math.min(prev + 25, filteredProducts.length));
+  };
+
+  const hasMoreProducts = displayedCount < filteredProducts.length;
 
   return (
     <div className="max-m-6xl py-4 mx-auto sm:py-16 sm:px-24">
@@ -73,19 +88,32 @@ export default function Page() {
         <div className="grid gap-5 mt-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-5 md:gap-10 max-w-xs sm:max-w-none mx-auto">
           {loading && <SkeletonSchema grid={5} />}
           {!loading &&
-            filteredProducts.map((product: ProductType) => (
+            displayedProducts.map((product: ProductType) => (
               <ProductCard key={product.id} product={product} />
             ))}
-          {!loading && filteredProducts.length === 0 && (
+          {!loading && displayedProducts.length === 0 && (
             <p>No hay productos disponibles</p>
           )}
         </div>
       </div>
 
+      {/* Botón para cargar más productos */}
+      {!loading && hasMoreProducts && (
+        <div className="flex justify-center mt-8">
+          <Button
+            onClick={handleLoadMore}
+            variant="outline"
+            className="px-8 py-2"
+          >
+            Cargar más productos
+          </Button>
+        </div>
+      )}
+
       {/* Contador de productos */}
       <ProductsCounter
-        visibleCount={filteredProducts.length}
-        totalCount={allProducts?.length || 0}
+        visibleCount={displayedProducts.length}
+        totalCount={filteredProducts.length}
         isLoading={loading}
       />
     </div>
