@@ -8,21 +8,21 @@ import Autoplay from "embla-carousel-autoplay";
 export const dataCarouselTop = [
   {
     id: 1,
-    title: "🎉 ¡Primer aniversario de GAMBA! 🎉",
-    description: "Obten un descuento de hasta 10%",
-    link: "/products",
+    title: "Envío en 24/48 horas",
+    description: "Obten más información y únete",
+    link: "#!",
   },
   {
     id: 2,
-    title: "🎉 10% de descuento en pedidos hasta el 1 de Agosto 🎉",
-    description: "Solo pago en efectivo",
-    link: "/products",
+    title: "Consigue descuento por compras al mayoreo",
+    description: "Obten más información y únete",
+    link: "#!",
   },
   {
     id: 3,
     title: "Envío a todo Aguascalientes",
-    description: "Obten más información",
-    link: "/nosotros",
+    description: "Obten más información y únete",
+    link: "#!",
   },
 ];
 
@@ -34,7 +34,7 @@ const CarouselTextBanner = () => {
         className="w-full max-w-4xl mx-auto"
         plugins={[
           Autoplay({
-            delay: 5000,
+            delay: 2500,
           }),
         ]}
       >

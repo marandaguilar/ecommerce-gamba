@@ -6,7 +6,7 @@ const ItemsMenuMobile = () => {
   return (
     <Popover>
       <PopoverTrigger>
-        <Menu className="size-7" />
+        <Menu />
       </PopoverTrigger>
       <PopoverContent className="w-40">
         <Link href="/products" className="block p-2">
