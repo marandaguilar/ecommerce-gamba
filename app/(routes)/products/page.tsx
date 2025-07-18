@@ -8,21 +8,29 @@ import SkeletonSchema from "@/components/skeletonSchema";
 import ProductCard from "./components/carousel-products";
 import ProductsFilter from "./components/products-filter";
 import { ProductType } from "@/types/product";
-import { Button } from "@/components/ui/button";
 import ProductsCounter from "@/components/shared/products-counter";
 
 export default function Page() {
-  const { result: products, loading: productsLoading }: ResponseType =
-    useGetAllProducts();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [visibleProducts, setVisibleProducts] = useState<number>(25);
 
-  // Filtrar productos por categoría y búsqueda
+  const { result: allProducts, loading }: ResponseType = useGetAllProducts(); // Cargar muchos productos de una vez
+
   const filteredProducts = useMemo(() => {
-    if (!products) return null;
+    if (!allProducts) return [];
 
-    let filtered = products;
+    let filtered = allProducts;
+
+    // Filtrar por búsqueda
+    if (searchTerm.trim() !== "") {
+      filtered = filtered.filter(
+        (product: ProductType) =>
+          product.productName
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          product.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
 
     // Filtrar por categoría
     if (selectedCategory !== null) {
@@ -32,41 +40,16 @@ export default function Page() {
       );
     }
 
-    // Filtrar por término de búsqueda
-    if (searchTerm.trim() !== "") {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (product: ProductType) =>
-          product.productName.toLowerCase().includes(searchLower) ||
-          product.description?.toLowerCase().includes(searchLower)
-      );
-    }
-
     return filtered;
-  }, [products, selectedCategory, searchTerm]);
-
-  // Obtener solo los productos visibles
-  const visibleFilteredProducts = useMemo(() => {
-    if (!filteredProducts) return null;
-    return filteredProducts.slice(0, visibleProducts);
-  }, [filteredProducts, visibleProducts]);
+  }, [allProducts, selectedCategory, searchTerm]);
 
   const handleCategoryChange = (categoryId: string | null) => {
     setSelectedCategory(categoryId);
-    setVisibleProducts(25); // Resetear a 25 productos cuando cambie la categoría
   };
 
   const handleSearchChange = (term: string) => {
     setSearchTerm(term);
-    setVisibleProducts(25); // Resetear a 5 productos cuando cambie la búsqueda
   };
-
-  const handleLoadMore = () => {
-    setVisibleProducts((prev) => prev + 25);
-  };
-
-  const hasMoreProducts =
-    filteredProducts && visibleProducts < filteredProducts.length;
 
   return (
     <div className="max-m-6xl py-4 mx-auto sm:py-16 sm:px-24">
@@ -75,52 +58,35 @@ export default function Page() {
           <h1 className="text-3xl font-medium">Todos los productos</h1>
 
           {/* Filtro de categorías y búsqueda */}
-          {products !== null && !productsLoading && (
-            <ProductsFilter
-              products={products}
-              selectedCategory={selectedCategory}
-              onCategoryChange={handleCategoryChange}
-              searchTerm={searchTerm}
-              onSearchChange={handleSearchChange}
-            />
-          )}
+          <ProductsFilter
+            products={allProducts || []}
+            selectedCategory={selectedCategory}
+            onCategoryChange={handleCategoryChange}
+            searchTerm={searchTerm}
+            onSearchChange={handleSearchChange}
+          />
         </div>
       </div>
       <Separator />
 
       <div className="flex justify-center">
         <div className="grid gap-5 mt-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-5 md:gap-10 max-w-xs sm:max-w-none mx-auto">
-          {productsLoading && <SkeletonSchema grid={5} />}
-          {visibleFilteredProducts !== null &&
-            !productsLoading &&
-            visibleFilteredProducts.map((product: ProductType) => (
+          {loading && <SkeletonSchema grid={5} />}
+          {!loading &&
+            filteredProducts.map((product: ProductType) => (
               <ProductCard key={product.id} product={product} />
             ))}
-          {visibleFilteredProducts !== null &&
-            !productsLoading &&
-            visibleFilteredProducts.length === 0 && (
-              <p>No hay productos disponibles</p>
-            )}
+          {!loading && filteredProducts.length === 0 && (
+            <p>No hay productos disponibles</p>
+          )}
         </div>
       </div>
 
-      {/* Botón "Ver más" */}
-      {hasMoreProducts && !productsLoading && (
-        <div className="flex justify-center mt-8">
-          <Button
-            onClick={handleLoadMore}
-            className="px-8 py-2 text-white dark:text-black rounded-lg transition-colors"
-          >
-            Ver más
-          </Button>
-        </div>
-      )}
-
       {/* Contador de productos */}
       <ProductsCounter
-        visibleCount={visibleFilteredProducts?.length || 0}
-        totalCount={filteredProducts?.length || 0}
-        isLoading={productsLoading}
+        visibleCount={filteredProducts.length}
+        totalCount={allProducts?.length || 0}
+        isLoading={loading}
       />
     </div>
   );
