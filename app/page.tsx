@@ -7,7 +7,7 @@ import RebajaProducts from "@/components/rebaja-products";
 
 export default function Home() {
   return (
-    <main>
+    <main className="pt-6">
       <CarouselTextBanner />
       <FeaturedProducts />
       <BannerProduct />
