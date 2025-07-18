@@ -46,7 +46,7 @@ export default function RootLayout({
             zIndex={1600}
             showAtBottom={false}
           />
-          <Navbar className="bg-white dark:bg-gray-900" />
+          <Navbar />
           {children}
           <Toaster />
           <Footer />
