@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useGetAllProducts } from "@/api/getProducts";
+import { useState, useMemo, useEffect } from "react";
+import { useGetAllProducts, useSearchProducts } from "@/api/getProducts";
 import { ResponseType } from "@/types/response";
 import { Separator } from "@/components/ui/separator";
 import SkeletonSchema from "@/components/skeletonSchema";
@@ -12,61 +12,94 @@ import { Button } from "@/components/ui/button";
 import ProductsCounter from "@/components/shared/products-counter";
 
 export default function Page() {
-  const { result: products, loading: productsLoading }: ResponseType =
-    useGetAllProducts();
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [visibleProducts, setVisibleProducts] = useState<number>(25);
+  const [allProducts, setAllProducts] = useState<ProductType[]>([]);
+  const [totalProducts, setTotalProducts] = useState<number>(0);
+  const [hasMorePages, setHasMorePages] = useState<boolean>(true);
+  const [lastSearchTerm, setLastSearchTerm] = useState<string>("");
 
-  // Filtrar productos por categoría y búsqueda
+  // Usar búsqueda con paginación del servidor si hay término de búsqueda
+  const {
+    result: searchResult,
+    loading: searchLoading,
+    pagination: searchPagination,
+  }: ResponseType = useSearchProducts(searchTerm, currentPage, 25);
+
+  // Usar productos normales si no hay término de búsqueda
+  const {
+    result: normalResult,
+    loading: normalLoading,
+    pagination: normalPagination,
+  }: ResponseType = useGetAllProducts(currentPage, 25);
+
+  // Determinar qué resultado usar
+  const isSearching = searchTerm.trim() !== "";
+  const result = isSearching ? searchResult : normalResult;
+  const loading = isSearching ? searchLoading : normalLoading;
+  const pagination = isSearching ? searchPagination : normalPagination;
+
+  // Detectar cambios en el término de búsqueda
+  useEffect(() => {
+    if (searchTerm !== lastSearchTerm) {
+      setLastSearchTerm(searchTerm);
+      setCurrentPage(1);
+      setAllProducts([]);
+      setHasMorePages(true);
+    }
+  }, [searchTerm, lastSearchTerm]);
+
+  // Actualizar productos acumulados cuando se cargan nuevos
+  useEffect(() => {
+    if (result) {
+      if (currentPage === 1) {
+        setAllProducts(result);
+      } else {
+        // Verificar que no haya duplicados antes de agregar
+        const existingIds = new Set(allProducts.map((product) => product.id));
+        const newProducts = result.filter(
+          (product: ProductType) => !existingIds.has(product.id)
+        );
+        setAllProducts((prev) => [...prev, ...newProducts]);
+      }
+
+      if (pagination) {
+        setTotalProducts(pagination.total);
+        setHasMorePages(currentPage < pagination.pageCount);
+      }
+    }
+  }, [result, currentPage, pagination, allProducts]);
+
+  // Filtrar productos por categoría (esto se mantiene del lado del cliente ya que es un filtro adicional)
   const filteredProducts = useMemo(() => {
-    if (!products) return null;
+    if (!allProducts) return null;
 
-    let filtered = products;
-
-    // Filtrar por categoría
-    if (selectedCategory !== null) {
-      filtered = filtered.filter(
+    // Solo filtrar por categoría si no estamos buscando
+    if (selectedCategory !== null && !isSearching) {
+      return allProducts.filter(
         (product: ProductType) =>
           product.category?.id.toString() === selectedCategory
       );
     }
 
-    // Filtrar por término de búsqueda
-    if (searchTerm.trim() !== "") {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (product: ProductType) =>
-          product.productName.toLowerCase().includes(searchLower) ||
-          product.description?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    return filtered;
-  }, [products, selectedCategory, searchTerm]);
-
-  // Obtener solo los productos visibles
-  const visibleFilteredProducts = useMemo(() => {
-    if (!filteredProducts) return null;
-    return filteredProducts.slice(0, visibleProducts);
-  }, [filteredProducts, visibleProducts]);
+    return allProducts;
+  }, [allProducts, selectedCategory, isSearching]);
 
   const handleCategoryChange = (categoryId: string | null) => {
     setSelectedCategory(categoryId);
-    setVisibleProducts(25); // Resetear a 25 productos cuando cambie la categoría
+    setCurrentPage(1);
+    setAllProducts([]);
+    setHasMorePages(true);
   };
 
   const handleSearchChange = (term: string) => {
     setSearchTerm(term);
-    setVisibleProducts(25); // Resetear a 5 productos cuando cambie la búsqueda
   };
 
   const handleLoadMore = () => {
-    setVisibleProducts((prev) => prev + 25);
+    setCurrentPage((prev) => prev + 1);
   };
-
-  const hasMoreProducts =
-    filteredProducts && visibleProducts < filteredProducts.length;
 
   return (
     <div className="max-m-6xl py-4 mx-auto sm:py-16 sm:px-24">
@@ -75,37 +108,45 @@ export default function Page() {
           <h1 className="text-3xl font-medium">Todos los productos</h1>
 
           {/* Filtro de categorías y búsqueda */}
-          {products !== null && !productsLoading && (
-            <ProductsFilter
-              products={products}
-              selectedCategory={selectedCategory}
-              onCategoryChange={handleCategoryChange}
-              searchTerm={searchTerm}
-              onSearchChange={handleSearchChange}
-            />
-          )}
+          <ProductsFilter
+            products={allProducts}
+            selectedCategory={selectedCategory}
+            onCategoryChange={handleCategoryChange}
+            searchTerm={searchTerm}
+            onSearchChange={handleSearchChange}
+          />
         </div>
       </div>
       <Separator />
 
       <div className="flex justify-center">
         <div className="grid gap-5 mt-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-5 md:gap-10 max-w-xs sm:max-w-none mx-auto">
-          {productsLoading && <SkeletonSchema grid={5} />}
-          {visibleFilteredProducts !== null &&
-            !productsLoading &&
-            visibleFilteredProducts.map((product: ProductType) => (
+          {loading && currentPage === 1 && <SkeletonSchema grid={5} />}
+          {filteredProducts !== null &&
+            !loading &&
+            filteredProducts.map((product: ProductType) => (
               <ProductCard key={product.id} product={product} />
             ))}
-          {visibleFilteredProducts !== null &&
-            !productsLoading &&
-            visibleFilteredProducts.length === 0 && (
+          {filteredProducts !== null &&
+            !loading &&
+            filteredProducts.length === 0 && (
               <p>No hay productos disponibles</p>
             )}
         </div>
       </div>
 
+      {/* Loading indicator para cargas adicionales */}
+      {loading && currentPage > 1 && (
+        <div className="flex justify-center mt-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-2">Cargando más productos...</p>
+          </div>
+        </div>
+      )}
+
       {/* Botón "Ver más" */}
-      {hasMoreProducts && !productsLoading && (
+      {hasMorePages && !loading && (
         <div className="flex justify-center mt-8">
           <Button
             onClick={handleLoadMore}
@@ -118,9 +159,9 @@ export default function Page() {
 
       {/* Contador de productos */}
       <ProductsCounter
-        visibleCount={visibleFilteredProducts?.length || 0}
-        totalCount={filteredProducts?.length || 0}
-        isLoading={productsLoading}
+        visibleCount={filteredProducts?.length || 0}
+        totalCount={totalProducts || 0}
+        isLoading={loading}
       />
     </div>
   );
