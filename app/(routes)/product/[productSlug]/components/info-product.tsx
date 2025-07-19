@@ -39,7 +39,7 @@ const InfoProduct = (props: InfoProductProps) => {
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-5">
+      <div className="flex items-center gap-5 sm:flex-row flex-col">
         {/* <Button className="w-full" onClick={() => addItem(product)}>
           <ShoppingCart size={20} />
           <span>Comprar</span>

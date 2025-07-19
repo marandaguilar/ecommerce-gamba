@@ -20,7 +20,7 @@ export const dataCarouselTop = [
   },
   {
     id: 3,
-    title: "¡Primer aniversario de GAMBA!",
+    title: "Disponibilidad en Aguascalientes",
     description: "Obten más información",
     link: "/nosotros",
   },
