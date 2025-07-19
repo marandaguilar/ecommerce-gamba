@@ -14,7 +14,7 @@ const ChooseCategory = () => {
     <div className="max-w-6xl mx-auto py-4 sm:py-16 sm:px-24">
       <h3 className="px-6 pb-4 text-3xl sm:pb-8">¿Qué te gustaría comprar?</h3>
 
-      <div className="grid gap-5 grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-5 grid-cols-1 lg:grid-cols-3">
         {!loading &&
           result !== undefined &&
           result.map((category: CategoryType) => (

@@ -3,7 +3,7 @@ import { buttonVariants } from "./ui/button";
 
 const BannerDiscount = () => {
   return (
-    <div className="p-20 sm:p-8 text-center">
+    <div className="p-10 sm:p-8 text-center">
       <h2 className="uppercase text-2xl font-black text-primary">
         Descuento en productos al mayoreo
       </h2>

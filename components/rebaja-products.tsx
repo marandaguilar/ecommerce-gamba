@@ -29,7 +29,7 @@ const RebajaProducts = () => {
       <h3 className="px-6 text-3xl sm:pb-8 p-2">Productos en rebaja</h3>
 
       <Carousel>
-        <CarouselContent className="ml-2 md:-ml-4 px-20 md:px-0">
+        <CarouselContent className="ml-2 md:-ml-4">
           {loading && <SkeletonSchema grid={3} />}
           {result !== null &&
             result.map((product: ProductType) => {
@@ -52,7 +52,7 @@ const RebajaProducts = () => {
                         <div className="absolute right-2 top-2">
                           <ProductCategories category={category} />
                         </div>
-                        <div className="absolute w-full px-6 transition duration-200 opacity-0 group-hover:opacity-100 bottom-1">
+                        <div className="absolute w-full px-6 transition duration-200 sm:opacity-0 sm:group-hover:opacity-100 bottom-1">
                           <div className="flex justify-center gap-x-6">
                             <IconButton
                               onClick={() => router.push(`/product/${slug}`)}

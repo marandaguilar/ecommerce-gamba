@@ -38,7 +38,7 @@ const ProductCard = (props: ProductCardProps) => {
                   loading="lazy"
                 />
               </div>
-              <div className="absolute w-full px-6 transition duration-200 opacity-0 group-hover:opacity-100 bottom-2">
+              <div className="absolute w-full px-6 transition duration-200 sm:opacity-0 sm:group-hover:opacity-100 bottom-2">
                 <div className="flex justify-center gap-x-6 items-center">
                   <IconButton
                     onClick={() => router.push(`/product/${product.slug}`)}
