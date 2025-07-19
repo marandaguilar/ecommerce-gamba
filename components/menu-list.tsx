@@ -18,7 +18,9 @@ const MenuList = () => {
     <NavigationMenu viewport={false}>
       <NavigationMenuList>
         <NavigationMenuItem>
-          <NavigationMenuTrigger>Categorias</NavigationMenuTrigger>
+          <NavigationMenuTrigger className="text-md">
+            Categorias
+          </NavigationMenuTrigger>
           <NavigationMenuContent>
             <ul className="grid w-[400px] gap-2 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
               {components.map((component) => (
@@ -34,12 +36,18 @@ const MenuList = () => {
           </NavigationMenuContent>
         </NavigationMenuItem>
         <NavigationMenuItem>
-          <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+          <NavigationMenuLink
+            asChild
+            className={`${navigationMenuTriggerStyle()} text-md`}
+          >
             <Link href="/products">Productos</Link>
           </NavigationMenuLink>
         </NavigationMenuItem>
         <NavigationMenuItem>
-          <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+          <NavigationMenuLink
+            asChild
+            className={`${navigationMenuTriggerStyle()} text-md`}
+          >
             <Link href="/nosotros">Sobre Nosotros</Link>
           </NavigationMenuLink>
         </NavigationMenuItem>

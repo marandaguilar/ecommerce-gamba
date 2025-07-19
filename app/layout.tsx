@@ -27,7 +27,7 @@ export default function RootLayout({
       <body className={`${urbanist.variable} antialiased pt-16`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >

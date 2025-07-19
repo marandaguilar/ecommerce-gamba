@@ -73,7 +73,7 @@ const ProductCategories = (props: ProductCategoriesProps) => {
       onClick={() => router.push(`/category/${category?.slug}`)}
     >
       <p
-        className={`px-2 py-1 text-xs text-white dark:text-black rounded-full ${categoryColor}`}
+        className={`px-2 py-1 text-sm font-bold sm:font-normal text-white dark:text-black rounded-full ${categoryColor}`}
       >
         {category?.categoryName}
       </p>

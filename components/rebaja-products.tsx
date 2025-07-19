@@ -25,11 +25,11 @@ const RebajaProducts = () => {
   const { addLovedItem } = useLovedProducts();
 
   return (
-    <div className="max-w-6xl py-4 mx-auto sm:py-16 sm:px-24">
-      <h3 className="px-6 text-3xl sm:pb-8">Productos en rebaja</h3>
+    <div className="max-w-6xl py-10 mx-auto sm:py-16 sm:px-24 px-10">
+      <h3 className="px-6 text-3xl sm:pb-8 p-2">Productos en rebaja</h3>
 
       <Carousel>
-        <CarouselContent className="ml-2 md:-ml-4">
+        <CarouselContent className="ml-2 md:-ml-4 px-20 md:px-0">
           {loading && <SkeletonSchema grid={3} />}
           {result !== null &&
             result.map((product: ProductType) => {
@@ -49,16 +49,19 @@ const RebajaProducts = () => {
                           alt="image rebaja"
                           loading="lazy"
                         />
-                        <div className="absolute w-full px-6 transition duration-200 opacity-0 group-hover:opacity-100 bottom-5">
+                        <div className="absolute right-2 top-2">
+                          <ProductCategories category={category} />
+                        </div>
+                        <div className="absolute w-full px-6 transition duration-200 opacity-0 group-hover:opacity-100 bottom-1">
                           <div className="flex justify-center gap-x-6">
                             <IconButton
                               onClick={() => router.push(`/product/${slug}`)}
-                              icon={<Expand size={20} />}
+                              icon={<Expand size={28} />}
                               className="text-gray-600"
                             />
                             <IconButton
                               onClick={() => addLovedItem(product)}
-                              icon={<Heart size={20} />}
+                              icon={<Heart size={28} />}
                               className="text-gray-600 transition duration-300 hover:fill-black cursor-pointer"
                             />
                             {/* <IconButton
@@ -73,9 +76,6 @@ const RebajaProducts = () => {
                         <h3 className="text-lg font-bold truncate whitespace-nowrap overflow-hidden text-ellipsis max-w-[60%]">
                           {productName}
                         </h3>
-                        <div className="flex-shrink-0 flex flex-wrap gap-2">
-                          <ProductCategories category={category} />
-                        </div>
                       </div>
                     </Card>
                   </div>

@@ -31,7 +31,7 @@ const Navbar = () => {
         <div className="flex sm:hidden">
           <ItemsMenuMobile />
         </div>
-        <div className="flex items-center justify-center gap-3 sm:gap-7">
+        <div className="flex items-center justify-center gap-7 sm:gap-5">
           {/* {cart.items.length === 0 ? (
             <ShoppingCart
               strokeWidth={1}
@@ -45,7 +45,7 @@ const Navbar = () => {
             </div>
           )} */}
           <MessageCircle
-            size={25}
+            size={30}
             strokeWidth={1}
             className="cursor-pointer text-green-600 fill-green-600"
             onClick={() => {
@@ -58,6 +58,7 @@ const Navbar = () => {
             }}
           />
           <Heart
+            size={30}
             strokeWidth={1}
             className={`cursor-pointer ${
               lovedItems.length > 0 ? "fill-black dark:fill-white" : ""
