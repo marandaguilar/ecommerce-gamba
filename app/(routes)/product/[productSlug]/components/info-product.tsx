@@ -26,6 +26,12 @@ const InfoProduct = (props: InfoProductProps) => {
       <div>
         <p className="text-md text-gray-800">{product.description}</p>
       </div>
+      <div className="flex items-center gap-2 py-2">
+        <span className="text-sm text-gray-500">
+          Las imágenes pueden tener ligeras variaciones, únicamente son
+          referenciales.
+        </span>
+      </div>
       <Separator className="my-4" />
       <div className="mb-4">
         <div className="flex items-baseline gap-x-2">

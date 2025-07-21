@@ -10,7 +10,6 @@ import { useLovedProducts } from "@/hooks/use-loved-products";
 
 const Navbar = () => {
   const router = useRouter();
-  // const cart = useCart();
   const { lovedItems } = useLovedProducts();
 
   return (
@@ -31,7 +30,7 @@ const Navbar = () => {
         <div className="flex sm:hidden">
           <ItemsMenuMobile />
         </div>
-        <div className="flex items-center justify-center gap-7 sm:gap-5">
+        <div className="flex items-center justify-center gap-4 sm:gap-5">
           {/* {cart.items.length === 0 ? (
             <ShoppingCart
               strokeWidth={1}
@@ -70,7 +69,9 @@ const Navbar = () => {
             className="cursor-pointer"
             onClick={() => router.push("/profile")}
           /> */}
-          <ToggleTheme />
+          <div className="hidden sm:block">
+            <ToggleTheme />
+          </div>
         </div>
       </div>
     </div>

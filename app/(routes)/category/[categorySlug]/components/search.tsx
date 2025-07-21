@@ -16,7 +16,7 @@ export default function CategorySearch({
   };
 
   return (
-    <div className="relative w-full sm:w-auto">
+    <div className="relative sm:w-auto w-full">
       <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
       <input
         type="text"

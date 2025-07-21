@@ -57,7 +57,7 @@ export default function Page() {
   return (
     <div className="max-m-6xl py-4 mx-auto sm:py-16 sm:px-24 mt-8 sm:mt-0">
       {result !== null && !loading && (
-        <div className="mb-6">
+        <div className="mb-6 px-2 sm:px-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h1 className="text-3xl font-medium">
               {result[0].category.categoryName}
@@ -72,7 +72,7 @@ export default function Page() {
       <Separator />
 
       <div className="flex justify-center">
-        <div className="grid gap-2 mt-8 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:gap-4 max-w-md sm:max-w-none mx-auto">
+        <div className="grid gap-2 mt-8 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:gap-4 max-w-md sm:max-w-none mx-auto px-2 sm:px-0">
           {loading && <SkeletonSchema grid={4} />}
           {visibleFilteredProducts !== null &&
             !loading &&
