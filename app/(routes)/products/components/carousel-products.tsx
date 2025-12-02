@@ -68,8 +68,8 @@ const ProductCard = (props: ProductCardProps) => {
           {product.productName}
         </p>
         <div className="flex justify-between">
-          <p className="text-sm">Menudeo:</p>
           <p className="text-sm">Mayoreo:</p>
+          <p className="text-sm">Menudeo:</p>
         </div>
         <div className="flex justify-between">
           <p className="font-bold text-center text-lg">

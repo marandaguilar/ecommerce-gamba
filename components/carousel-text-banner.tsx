@@ -8,14 +8,14 @@ import Autoplay from "embla-carousel-autoplay";
 export const dataCarouselTop = [
   {
     id: 1,
-    title: "🎉 ¡Primer aniversario de GAMBA! 🎉",
-    description: "Obten un descuento de hasta 10%",
+    title: "🎉 ¡Época navideña! 🎉",
+    description: "Felices fiestas",
     link: "/products",
   },
   {
     id: 2,
-    title: "🎉 10% de descuento en pedidos hasta el 1 de Agosto 🎉",
-    description: "Solo pago en efectivo",
+    title: "Mejores precios",
+    description: "Emitimos factura",
     link: "/products",
   },
   {
