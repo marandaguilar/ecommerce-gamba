@@ -16,7 +16,7 @@ export default function Page() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [displayedCount, setDisplayedCount] = useState<number>(25);
 
-  const { result: allProducts, loading }: ResponseType = useGetAllProducts(); // Cargar muchos productos de una vez
+  const { result: allProducts, loading }: ResponseType = useGetAllProducts(1, 100); // Cargar todos los productos para filtrado cliente-side
 
   const filteredProducts = useMemo(() => {
     if (!allProducts) return [];
