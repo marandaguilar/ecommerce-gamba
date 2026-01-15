@@ -1,11 +1,16 @@
+"use client";
+
 import CarouselTextBanner from "@/components/carousel-text-banner";
 import FeaturedProducts from "@/components/featured-products";
 import BannerDiscount from "@/components/banner-discount";
-import ChooseCategory from "@/components/choose-category";
 import BannerProduct from "@/components/banner.product";
 import RebajaProducts from "@/components/rebaja-products";
+import { useGetCategories } from "@/api/getProducts";
+import CategorySection from "@/components/category-section";
 
 export default function Home() {
+  const { result: categories } = useGetCategories();
+
   return (
     <main className="mt-8">
       <CarouselTextBanner />
@@ -13,7 +18,12 @@ export default function Home() {
       <BannerProduct />
       <RebajaProducts />
       <BannerDiscount />
-      <ChooseCategory />
+
+      {/* Category Sections */}
+      {categories &&
+        (categories as any[]).map((category: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
+          <CategorySection key={category.id} category={category} />
+        ))}
     </main>
   );
 }

@@ -22,7 +22,7 @@ const MenuList = () => {
             Categorias
           </NavigationMenuTrigger>
           <NavigationMenuContent>
-            <ul className="grid w-[400px] gap-2 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+            <ul className="grid w-[400px] gap-2 md:w-[300px] md:grid-cols-1 lg:w-[300px]">
               {components.map((component) => (
                 <ListItem
                   key={component.title}
