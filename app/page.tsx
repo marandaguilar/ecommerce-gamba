@@ -22,7 +22,7 @@ export default function Home() {
       {/* Category Sections */}
       {categories &&
         (categories as any[]).map((category: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
-          <CategorySection key={category.id} category={category} />
+          <CategorySection key={category.id} category={category} searchTerm={""} />
         ))}
     </main>
   );

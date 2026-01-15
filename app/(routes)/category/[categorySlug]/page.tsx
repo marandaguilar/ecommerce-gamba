@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useGetCategoryProduct } from "@/api/getCategoryProduct";
 import { useParams } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
@@ -15,30 +15,11 @@ export default function Page() {
   const params = useParams();
   const { categorySlug } = params as { categorySlug: string };
 
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [allProducts, setAllProducts] = useState<ProductType[]>([]);
-  const [hasMore, setHasMore] = useState<boolean>(true);
-  const [loadingMore, setLoadingMore] = useState<boolean>(false);
-
-  const { result, loading, meta } = useGetCategoryProduct(categorySlug, currentPage, 25);
-
-  useEffect(() => {
-    if (result && currentPage === 1) {
-      setAllProducts(result);
-    } else if (result && currentPage > 1) {
-      setAllProducts(prev => [...prev, ...result]);
-    }
-  }, [result, currentPage]);
-
-  useEffect(() => {
-    if (meta) {
-      setHasMore(currentPage < meta.pagination.pageCount);
-    }
-  }, [meta, currentPage]);
-
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [displayedCount, setDisplayedCount] = useState<number>(25);
 
-  // Filtrar productos por término de búsqueda
+  const { result: allProducts, loading } = useGetCategoryProduct(categorySlug, 1, 100, 100);
+
   const filteredProducts = useMemo(() => {
     if (!allProducts) return [];
 
@@ -54,60 +35,53 @@ export default function Page() {
     );
   }, [allProducts, searchTerm]);
 
+  const displayedProducts = useMemo(() => {
+    return filteredProducts.slice(0, displayedCount);
+  }, [filteredProducts, displayedCount]);
+
   const handleSearchChange = (term: string) => {
     setSearchTerm(term);
-    // Reset to first page and reload
-    setCurrentPage(1);
-    setAllProducts([]);
-    setHasMore(true);
+    setDisplayedCount(25);
   };
 
   const handleLoadMore = () => {
-    if (!loadingMore && hasMore) {
-      setLoadingMore(true);
-      setCurrentPage(prev => prev + 1);
-      // After loading, setLoadingMore(false) in another useEffect or in the hook
-    }
+    setDisplayedCount((prev) => Math.min(prev + 25, filteredProducts.length));
   };
 
-  useEffect(() => {
-    setLoadingMore(false);
-  }, [allProducts]);
+  const hasMoreProducts = displayedCount < filteredProducts.length;
 
-  const categoryName = allProducts.length > 0 ? allProducts[0]?.category?.categoryName : '';
+  const categoryName = allProducts && allProducts.length > 0 ? allProducts[0]?.category?.categoryName : '';
 
   return (
-    <div className="max-m-6xl py-4 mx-auto sm:py-16 sm:px-24 mt-8 sm:mt-0">
-      {allProducts.length > 0 && !loading && (
-        <div className="mb-6 px-2 sm:px-0">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h1 className="text-3xl font-medium">
-              {categoryName}
-            </h1>
-            <CategorySearch
-              searchTerm={searchTerm}
-              onSearchChange={handleSearchChange}
-            />
-          </div>
+    <div className="max-m-6xl py-10 mx-auto sm:px-16 px-8">
+      <div className="mb-6 px-2 sm:px-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h1 className="text-3xl font-medium">
+            {categoryName || 'Categoría'}
+          </h1>
+          <CategorySearch
+            searchTerm={searchTerm}
+            onSearchChange={handleSearchChange}
+          />
         </div>
-      )}
+      </div>
       <Separator />
 
       <div className="flex justify-center">
         <div className="grid gap-2 mt-8 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:gap-4 max-w-md sm:max-w-none mx-auto px-2 sm:px-0">
-          {(loading && currentPage === 1) && <SkeletonSchema grid={4} />}
-          {filteredProducts.map((product: ProductType) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-          {filteredProducts.length === 0 && !loading && (
+          {loading && <SkeletonSchema grid={4} />}
+          {!loading &&
+            displayedProducts.map((product: ProductType) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          {!loading && displayedProducts.length === 0 && (
             <p>No hay productos que coincidan con la búsqueda</p>
           )}
-          {loadingMore && <SkeletonSchema grid={4} />}
         </div>
       </div>
 
       {/* Botón "Ver más" */}
-      {hasMore && !loading && !loadingMore && (
+      {!loading && hasMoreProducts && (
         <div className="flex justify-center mt-8">
           <Button
             onClick={handleLoadMore}
@@ -120,9 +94,9 @@ export default function Page() {
 
       {/* Contador de productos */}
       <ProductsCounter
-        visibleCount={filteredProducts.length}
-        totalCount={filteredProducts.length} // Since we load all available, total is what we have
-        isLoading={loading || loadingMore}
+        visibleCount={displayedProducts.length}
+        totalCount={filteredProducts.length}
+        isLoading={loading}
       />
     </div>
   );

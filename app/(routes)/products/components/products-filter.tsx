@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { ProductType } from "@/types/product";
 import { CategoryType } from "@/types/category";
 import { Filter, Search } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface ProductsFilterProps {
   products: ProductType[] | null;
@@ -34,6 +35,13 @@ export default function ProductsFilter({
     return Array.from(categoriesMap.values());
   }, [products]);
 
+  const [localSearchTerm, setLocalSearchTerm] = React.useState(searchTerm);
+  const debouncedSearchTerm = useDebounce(localSearchTerm, 300);
+
+  React.useEffect(() => {
+    onSearchChange(debouncedSearchTerm);
+  }, [debouncedSearchTerm, onSearchChange]);
+
   const handleCategoryChange = (
     event: React.ChangeEvent<HTMLSelectElement>
   ) => {
@@ -46,7 +54,7 @@ export default function ProductsFilter({
   };
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onSearchChange(event.target.value);
+    setLocalSearchTerm(event.target.value);
   };
 
   return (
@@ -72,7 +80,7 @@ export default function ProductsFilter({
         <input
           type="text"
           placeholder="Buscar productos..."
-          value={searchTerm}
+          value={localSearchTerm}
           onChange={handleSearchChange}
           className="w-full sm:w-[280px] pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />

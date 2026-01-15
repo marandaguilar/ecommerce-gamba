@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useGetCategoryProduct } from "@/api/getCategoryProduct";
 import ProductCard from "@/app/(routes)/category/[categorySlug]/components/product-card";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,10 @@ interface CategorySectionProps {
     slug: string;
     categoryName: string;
   };
+  searchTerm: string;
 }
 
-export default function CategorySection({ category }: CategorySectionProps) {
+export default function CategorySection({ category, searchTerm }: CategorySectionProps) {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -29,10 +30,20 @@ export default function CategorySection({ category }: CategorySectionProps) {
     category.slug,
     1,
     25,
-    10
+    100
   );
 
   const router = useRouter();
+
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
+    if (searchTerm.trim() === "") return products.slice(0, isMobile ? 5 : 10);
+    const searchLower = searchTerm.toLowerCase();
+    return products.filter((product: any) => // eslint-disable-line @typescript-eslint/no-explicit-any
+      product.productName.toLowerCase().includes(searchLower) ||
+      product.description?.toLowerCase().includes(searchLower)
+    );
+  }, [products, searchTerm, isMobile]);
 
   return (
     <div className="max-w-7xl py-10 mx-auto sm:px-16 px-8">
@@ -46,10 +57,12 @@ export default function CategorySection({ category }: CategorySectionProps) {
         {productsLoading ? (
           <div>Loading...</div>
         ) : (
-          products &&
-          products.slice(0, isMobile ? 5 : 10).map((product: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
+          filteredProducts.map((product: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
             <ProductCard key={product.id} product={product as any} /> // eslint-disable-line @typescript-eslint/no-explicit-any
           ))
+        )}
+        {!productsLoading && filteredProducts.length === 0 && searchTerm.trim() !== "" && (
+          <p>No hay productos que coincidan con la búsqueda</p>
         )}
       </div>
 
