@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useGetCategoryProduct } from "@/api/getCategoryProduct";
 import ProductCard from "@/app/(routes)/category/[categorySlug]/components/product-card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,15 @@ interface CategorySectionProps {
 }
 
 export default function CategorySection({ category }: CategorySectionProps) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const { result: products, loading: productsLoading } = useGetCategoryProduct(
     category.slug,
     1,
@@ -37,7 +47,7 @@ export default function CategorySection({ category }: CategorySectionProps) {
           <div>Loading...</div>
         ) : (
           products &&
-          products.slice(0, 10).map((product: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
+          products.slice(0, isMobile ? 5 : 10).map((product: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
             <ProductCard key={product.id} product={product as any} /> // eslint-disable-line @typescript-eslint/no-explicit-any
           ))
         )}
