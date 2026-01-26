@@ -26,7 +26,7 @@ export default function CategorySectionServer({
 
       {displayedProducts.length > 0 ? (
         <>
-          <div className="grid gap-4 mt-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid gap-2 sm:gap-4 mt-8 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {displayedProducts.map((product: ProductType) => (
               <ProductCard key={product.id} product={product} />
             ))}

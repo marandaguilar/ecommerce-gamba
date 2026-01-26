@@ -31,22 +31,13 @@ const getCategoryColor = (
 
   const specificColor = categoryColorMap[categoryName];
   if (specificColor) {
-    console.log("Found exact match for:", categoryName, "->", specificColor);
     return specificColor;
   }
 
   const specificColorLower = categoryColorMap[categoryName.toLowerCase()];
   if (specificColorLower) {
-    console.log(
-      "Found lowercase match for:",
-      categoryName,
-      "->",
-      specificColorLower
-    );
     return specificColorLower;
   }
-
-  console.log("No specific color found for:", categoryName, "using fallback");
 
   const colors = [
     "bg-red-700",

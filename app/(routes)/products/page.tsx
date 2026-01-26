@@ -9,7 +9,7 @@ export const metadata = {
 export default async function ProductsPage() {
   // Fetch initial products and categories server-side in parallel
   const [productsResponse, categories] = await Promise.all([
-    getProducts({ pageSize: 50 }), // Fetch 50 products initially for better filtering
+    getProducts({ page: 1, pageSize: 24 }),
     getAllCategories(),
   ]);
 
@@ -18,6 +18,7 @@ export default async function ProductsPage() {
       {/* Client wrapper handles filtering, search, and "load more" */}
       <ProductsClientWrapper
         initialProducts={productsResponse.data}
+        initialPagination={productsResponse.meta.pagination}
         categories={categories}
       />
     </div>
