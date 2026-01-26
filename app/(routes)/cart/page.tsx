@@ -36,7 +36,7 @@ export default function Page() {
                             <p>{formatPrice(totalPrice)}</p>
                         </div>
                         <div className="flex items-center justify-center w-full mt-3">
-                            <Button className="w-full" onClick={() => console.log("Comprar")}>Comprar</Button>
+                            <Button className="w-full text-white" onClick={() => console.log("Comprar")}>Comprar</Button>
                         </div>
                     </div>
                 </div>

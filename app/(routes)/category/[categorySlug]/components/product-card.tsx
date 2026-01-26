@@ -1,3 +1,5 @@
+"use client";
+
 import { ImageType, ProductType } from "@/types/product";
 import {
   Carousel,
@@ -20,60 +22,65 @@ const ProductCard = (props: ProductCardProps) => {
   const { addLovedItem } = useLovedProducts();
 
   return (
-    <div className="relative p-2 transition-all duration-100 rounded-lg hover:shadow-lg h-[350px] border border-gray-200 dark:border-gray-700 flex flex-col">
-      <Carousel
-        opts={{
-          align: "start",
-        }}
-        className="w-full max-w-sm flex-1"
-      >
-        <CarouselContent>
-          {product.images?.map((images: ImageType) => (
-            <CarouselItem key={images.id} className="group">
-              <div className="w-full h-full flex items-center justify-center">
-                <img
-                  src={images.url}
-                  alt="Image"
-                  className="w-max h-56 object-contain object-center rounded-md"
-                  loading="lazy"
-                />
-              </div>
-              <div className="absolute w-full px-6 transition duration-200 sm:opacity-0 sm:group-hover:opacity-100 bottom-2">
-                <div className="flex justify-center gap-x-6 items-center">
-                  <IconButton
-                    onClick={() => router.push(`/product/${product.slug}`)}
-                    icon={<Expand size={30} className="text-gray-600" />}
-                  />
-                  {/* <IconButton
-                    onClick={() => console.log("product")}
-                    icon={<ShoppingCart size={20} className="text-gray-600" />}
-                  /> */}
-                  <IconButton
-                    onClick={() => addLovedItem(product)}
-                    icon={<Heart size={30} className="text-gray-600" />}
-                    className="transition duration-300 hover:fill-black cursor-pointer"
+    <div className="relative transition-all duration-100 rounded-lg hover:shadow-lg border border-gray-200 flex flex-col overflow-hidden bg-white">
+      {/* Image container with strict fixed height */}
+      <div className="relative h-[240px] w-full bg-gray-50 shrink-0">
+        <Carousel
+          opts={{
+            align: "start",
+          }}
+          className="w-full h-full"
+        >
+          <CarouselContent className="h-full">
+            {product.images?.map((images: ImageType) => (
+              <CarouselItem key={images.id} className="group h-full">
+                <div className="w-full h-full flex items-center justify-center p-4">
+                  <img
+                    src={images.url}
+                    alt={product.productName}
+                    className="w-full h-full object-contain"
+                    loading="lazy"
+                    style={{ maxHeight: '100%', maxWidth: '100%' }}
                   />
                 </div>
-              </div>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-      </Carousel>
-      <div className="flex flex-col justify-between m-2 mt-auto">
-        <p className="text-2xl truncate w-full text-center">
+                <div className="absolute w-full px-6 transition duration-200 sm:opacity-0 sm:group-hover:opacity-100 bottom-4">
+                  <div className="flex justify-center gap-x-6 items-center">
+                    <IconButton
+                      onClick={() => router.push(`/product/${product.slug}`)}
+                      icon={<Expand size={30} className="text-gray-600" />}
+                    />
+                    <IconButton
+                      onClick={() => addLovedItem(product)}
+                      icon={<Heart size={30} className="text-gray-600" />}
+                      className="transition duration-300 hover:fill-black cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
+      </div>
+
+      {/* Product info - anchored at bottom */}
+      <div className="flex flex-col gap-2 p-4 mt-auto">
+        <p className="text-base font-medium truncate w-full text-center min-h-[24px]">
           {product.productName}
         </p>
-        <div className="flex justify-between">
-          <p className="text-sm">Mayoreo:</p>
-          <p className="text-sm">Menudeo:</p>
-        </div>
-        <div className="flex justify-between">
-          <p className="font-bold text-center text-lg">
-            {formatPrice(product.price_mayoreo)}
-          </p>
-          <p className="font-bold text-center text-lg">
-            {formatPrice(product.price)}
-          </p>
+        <div className="flex justify-between items-center gap-2">
+          <div className="flex-1">
+            <p className="text-xs text-gray-600 text-center">Mayoreo</p>
+            <p className="font-bold text-sm text-center">
+              {formatPrice(product.price_mayoreo)}
+            </p>
+          </div>
+          <div className="w-px h-8 bg-gray-200"></div>
+          <div className="flex-1">
+            <p className="text-xs text-gray-600 text-center">Menudeo</p>
+            <p className="font-bold text-sm text-center">
+              {formatPrice(product.price)}
+            </p>
+          </div>
         </div>
       </div>
     </div>

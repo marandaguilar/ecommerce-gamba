@@ -15,7 +15,7 @@ const PageSuccess = () => {
                     <p className="my-3">Agradecemos tu compra, te esperamos en la tienda.</p>
                     <p className="my-3">En breve recibirás un correo con los detalles de tu compra.</p>
                     <p className="my-3">Si tienes alguna pregunta, no dudes en contactarnos.</p>
-                    <Button>
+                    <Button className="text-white">
                         <Link href="/">
                             Volver a la tienda
                         </Link>

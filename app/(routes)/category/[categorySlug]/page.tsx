@@ -1,103 +1,53 @@
-"use client";
+import { notFound } from "next/navigation";
+import { getCategoryBySlug, getCategoryProducts } from "@/lib/data/strapi";
+import CategoryClientWrapper from "./components/category-client-wrapper";
 
-import { useState, useMemo } from "react";
-import { useGetCategoryProduct } from "@/api/getCategoryProduct";
-import { useParams } from "next/navigation";
-import { Separator } from "@/components/ui/separator";
-import SkeletonSchema from "@/components/skeletonSchema";
-import ProductCard from "./components/product-card";
-import CategorySearch from "./components/search";
-import { ProductType } from "@/types/product";
-import { Button } from "@/components/ui/button";
-import ProductsCounter from "@/components/shared/products-counter";
+interface PageProps {
+  params: Promise<{
+    categorySlug: string;
+  }>;
+}
 
-export default function Page() {
-  const params = useParams();
-  const { categorySlug } = params as { categorySlug: string };
+export async function generateMetadata({ params }: PageProps) {
+  const { categorySlug } = await params;
+  const category = await getCategoryBySlug(categorySlug);
 
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [displayedCount, setDisplayedCount] = useState<number>(25);
+  if (!category) {
+    return {
+      title: "Categoría no encontrada | Gamba",
+    };
+  }
 
-  const { result: allProducts, loading } = useGetCategoryProduct(categorySlug, 1, 100, 100);
-
-  const filteredProducts = useMemo(() => {
-    if (!allProducts) return [];
-
-    if (searchTerm.trim() === "") {
-      return allProducts;
-    }
-
-    const searchLower = searchTerm.toLowerCase();
-    return allProducts.filter(
-      (product: ProductType) =>
-        product.productName.toLowerCase().includes(searchLower) ||
-        product.description?.toLowerCase().includes(searchLower)
-    );
-  }, [allProducts, searchTerm]);
-
-  const displayedProducts = useMemo(() => {
-    return filteredProducts.slice(0, displayedCount);
-  }, [filteredProducts, displayedCount]);
-
-  const handleSearchChange = (term: string) => {
-    setSearchTerm(term);
-    setDisplayedCount(25);
+  return {
+    title: `${category.categoryName} | Gamba`,
+    description: `Explora productos de ${category.categoryName}`,
   };
+}
 
-  const handleLoadMore = () => {
-    setDisplayedCount((prev) => Math.min(prev + 25, filteredProducts.length));
-  };
+export default async function CategoryPage({ params }: PageProps) {
+  const { categorySlug } = await params;
 
-  const hasMoreProducts = displayedCount < filteredProducts.length;
+  // Fetch category and products server-side
+  const [category, initialProducts] = await Promise.all([
+    getCategoryBySlug(categorySlug),
+    getCategoryProducts(categorySlug, 50), // Fetch 50 products initially (increased for better search)
+  ]);
 
-  const categoryName = allProducts && allProducts.length > 0 ? allProducts[0]?.category?.categoryName : '';
+  if (!category) {
+    notFound();
+  }
 
   return (
-    <div className="max-m-6xl py-10 mx-auto sm:px-16 px-8">
-      <div className="mb-6 px-2 sm:px-0">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h1 className="text-3xl font-medium">
-            {categoryName || 'Categoría'}
-          </h1>
-          <CategorySearch
-            searchTerm={searchTerm}
-            onSearchChange={handleSearchChange}
-          />
-        </div>
-      </div>
-      <Separator />
-
-      <div className="flex justify-center">
-        <div className="grid gap-2 mt-8 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:gap-4 max-w-md sm:max-w-none mx-auto px-2 sm:px-0">
-          {loading && <SkeletonSchema grid={4} />}
-          {!loading &&
-            displayedProducts.map((product: ProductType) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          {!loading && displayedProducts.length === 0 && (
-            <p>No hay productos que coincidan con la búsqueda</p>
-          )}
-        </div>
-      </div>
-
-      {/* Botón "Ver más" */}
-      {!loading && hasMoreProducts && (
-        <div className="flex justify-center mt-8">
-          <Button
-            onClick={handleLoadMore}
-            className="px-8 py-2 text-white dark:text-black rounded-lg transition-colors"
-          >
-            Ver más
-          </Button>
-        </div>
-      )}
-
-      {/* Contador de productos */}
-      <ProductsCounter
-        visibleCount={displayedProducts.length}
-        totalCount={filteredProducts.length}
-        isLoading={loading}
+    <div className="max-w-[1600px] py-10 mx-auto sm:px-8 px-4">
+      {/* Client wrapper handles search and "load more" functionality */}
+      <CategoryClientWrapper
+        initialProducts={initialProducts}
+        categorySlug={categorySlug}
+        categoryName={category.categoryName}
       />
     </div>
   );
 }
+
+// ISR: Revalidate every 1 hour
+export const revalidate = 3600;

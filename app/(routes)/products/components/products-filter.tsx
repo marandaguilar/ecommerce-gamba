@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { ProductType } from "@/types/product";
+import React from "react";
 import { CategoryType } from "@/types/category";
 import { Filter, Search } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 
 interface ProductsFilterProps {
-  products: ProductType[] | null;
+  products?: unknown;
+  categories: CategoryType[];
   selectedCategory: string | null;
   onCategoryChange: (categoryId: string | null) => void;
   searchTerm: string;
@@ -15,25 +15,14 @@ interface ProductsFilterProps {
 }
 
 export default function ProductsFilter({
-  products,
+  categories,
   selectedCategory,
   onCategoryChange,
   searchTerm,
   onSearchChange,
 }: ProductsFilterProps) {
-  // Extraer categorías únicas de los productos existentes
-  const uniqueCategories = useMemo(() => {
-    if (!products) return [];
-
-    const categoriesMap = new Map();
-    products.forEach((product: ProductType) => {
-      if (product.category) {
-        categoriesMap.set(product.category.id, product.category);
-      }
-    });
-
-    return Array.from(categoriesMap.values());
-  }, [products]);
+  // Use provided categories directly
+  const uniqueCategories = categories;
 
   const [localSearchTerm, setLocalSearchTerm] = React.useState(searchTerm);
   const debouncedSearchTerm = useDebounce(localSearchTerm, 300);
@@ -64,7 +53,7 @@ export default function ProductsFilter({
         <select
           value={selectedCategory || "all"}
           onChange={handleCategoryChange}
-          className="w-full sm:w-[210px] pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white dark:text-black"
+          className="w-full sm:w-[210px] pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white text-black"
         >
           <option value="all">Todas las categorías</option>
           {uniqueCategories.map((category: CategoryType) => (

@@ -20,7 +20,7 @@ export default function Page() {
       <div className="grid md:grid-cols-2 gap-8 mb-12">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl font-semibold text-blue-600 dark:text-blue-400">
+            <CardTitle className="text-2xl font-semibold text-blue-600">
               Nuestra Misión
             </CardTitle>
           </CardHeader>
@@ -36,7 +36,7 @@ export default function Page() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl font-semibold text-green-600 dark:text-green-400">
+            <CardTitle className="text-2xl font-semibold text-green-600">
               Nuestra Visión
             </CardTitle>
           </CardHeader>
@@ -61,9 +61,9 @@ export default function Page() {
         <CardContent>
           <div className="grid md:grid-cols-3 gap-6">
             <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
-                  className="w-8 h-8 text-blue-600 dark:text-blue-400"
+                  className="w-8 h-8 text-blue-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -84,9 +84,9 @@ export default function Page() {
             </div>
 
             <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
-                  className="w-8 h-8 text-green-600 dark:text-green-400"
+                  className="w-8 h-8 text-green-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -107,9 +107,9 @@ export default function Page() {
             </div>
 
             <div className="text-center">
-              <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
-                  className="w-8 h-8 text-purple-600 dark:text-purple-400"
+                  className="w-8 h-8 text-purple-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -142,7 +142,7 @@ export default function Page() {
         <CardContent>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="text-center">
-              <h4 className="font-semibold mb-2 text-blue-600 dark:text-blue-400">
+              <h4 className="font-semibold mb-2 text-blue-600">
                 Calidad
               </h4>
               <p className="text-sm text-muted-foreground">
@@ -151,7 +151,7 @@ export default function Page() {
               </p>
             </div>
             <div className="text-center">
-              <h4 className="font-semibold mb-2 text-green-600 dark:text-green-400">
+              <h4 className="font-semibold mb-2 text-green-600">
                 Confiabilidad
               </h4>
               <p className="text-sm text-muted-foreground">
@@ -160,7 +160,7 @@ export default function Page() {
               </p>
             </div>
             <div className="text-center">
-              <h4 className="font-semibold mb-2 text-purple-600 dark:text-purple-400">
+              <h4 className="font-semibold mb-2 text-purple-600">
                 Servicio
               </h4>
               <p className="text-sm text-muted-foreground">
@@ -169,7 +169,7 @@ export default function Page() {
               </p>
             </div>
             <div className="text-center">
-              <h4 className="font-semibold mb-2 text-orange-600 dark:text-orange-400">
+              <h4 className="font-semibold mb-2 text-orange-600">
                 Compromiso
               </h4>
               <p className="text-sm text-muted-foreground">
@@ -191,7 +191,7 @@ export default function Page() {
         <CardContent>
           <div className="grid md:grid-cols-2 gap-8">
             <div>
-              <h3 className="text-xl font-semibold mb-4 text-blue-600 dark:text-blue-400">
+              <h3 className="text-xl font-semibold mb-4 text-blue-600">
                 Cobertura de Servicio
               </h3>
               <p className="text-muted-foreground mb-4">
@@ -201,8 +201,8 @@ export default function Page() {
                 Nos especializamos en atender a clientes locales, ofreciendo un
                 servicio personalizado y de calidad.
               </p>
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                <p className="text-sm text-blue-800 dark:text-blue-200">
+              <div className="bg-blue-50/20 p-4 rounded-lg">
+                <p className="text-sm text-blue-800">
                   <strong>Nota importante:</strong> Esta plataforma funciona
                   como un catálogo digital. No realizamos ventas en línea, pero
                   te proporcionamos toda la información necesaria sobre nuestros
@@ -212,7 +212,7 @@ export default function Page() {
             </div>
 
             <div>
-              <h3 className="text-xl font-semibold mb-4 text-green-600 dark:text-green-400">
+              <h3 className="text-xl font-semibold mb-4 text-green-600">
                 ¿Por qué elegirnos?
               </h3>
               <ul className="space-y-2 text-muted-foreground">
@@ -306,7 +306,7 @@ export default function Page() {
               dudes en contactarnos.
             </p>
 
-            <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+            <div className="bg-gray-50 p-6 rounded-lg">
               <p className="text-sm text-muted-foreground">
                 <strong>Servicio disponible en:</strong> Aguascalientes, México
               </p>

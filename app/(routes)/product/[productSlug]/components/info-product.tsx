@@ -1,3 +1,5 @@
+"use client";
+
 import IconButton from "@/components/icon-button";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/formatPrice";
