@@ -5,6 +5,7 @@
 
 import { ProductType } from '@/types/product';
 import { CategoryType } from '@/types/category';
+import { SortKey, toStrapiSort } from '@/lib/sort';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -79,6 +80,7 @@ export async function getProducts(options: {
   categoryId?: number;
   isFeatured?: boolean;
   isRebaja?: boolean;
+  sort?: SortKey;
 } = {}): Promise<StrapiResponse<ProductType[]>> {
   const {
     page = 1,
@@ -86,7 +88,8 @@ export async function getProducts(options: {
     search,
     categoryId,
     isFeatured,
-    isRebaja
+    isRebaja,
+    sort
   } = options;
 
   const params = buildProductPopulate(false);
@@ -119,8 +122,8 @@ export async function getProducts(options: {
     params.append('filters[isRebaja][$eq]', isRebaja.toString());
   }
 
-  // Sort by creation date descending
-  params.append('sort[0]', 'createdAt:desc');
+  // Sort (allow-list segura; fallback a novedades)
+  params.append('sort[0]', toStrapiSort(sort));
 
   const url = `${BACKEND_URL}/api/products?${params.toString()}`;
 

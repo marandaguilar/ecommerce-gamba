@@ -1,156 +1,168 @@
-# Implementation Plan — Fase 3: Header / Navegación
+# Implementation Plan — Fase 4: Listado / Categoría
 
-> Deriva de `Spec.md` → sección 11, Fase 3. Cubre **RF-16, RF-17, RF-18, RF-19, RF-20**: buscador global en el header, categorías dinámicas desde Strapi, accesos visibles (favoritos / "Mi pedido" / WhatsApp), FAB de WhatsApp y footer consistente.
+> Deriva de `Spec.md` → sección 11, Fase 4. Cubre **RF-21 a RF-25**: unificar paginación de listado y categoría, breadcrumbs, ordenamiento, filtros, estado en URL, grid mobile compacto y estados de carga/vacío.
 > **Read-only plan.** La implementación es responsabilidad de `/g-build`.
-> Fases 1 (design system) y 2 (product card unificado) ya completas — ver git log de `redesign/phase-1-design-foundations`.
+> Fases 1 (design system), 2 (product card) y 3 (header/nav) ya completas — ver git log de `redesign/phase-1-design-foundations`.
 
 ## Overview
 
-El header hoy tiene **categorías hardcodeadas** (5 fijas en `menu-list.tsx` e `items-menu-mobile.tsx`), **no tiene buscador global** (la búsqueda vive dentro de cada listado) y solo expone WhatsApp + favoritos (sin contadores ni acceso al carrito/pedido). Esta fase convierte el header en una barra de navegación de e-commerce: categorías que vienen de Strapi (`getAllCategories`, ya disponible), buscador global que enruta a `/products?search=`, accesos con contador a favoritos y "Mi pedido", un FAB de WhatsApp siempre visible, y un footer alineado al design system.
+Hoy hay **dos modelos de listado divergentes**: `/products` pagina contra la API (fetch client-side acumulativo) y `/category/[slug]` carga 50 productos y filtra en el cliente (**bug: pierde los productos > 50**). Ninguno tiene breadcrumbs, ordenamiento ni filtros más allá de buscar/categoría, y los estados de carga/vacío son `<p>` planos. Esta fase unifica ambas superficies en **un patrón server-driven con el estado en la URL** (búsqueda, categoría, oferta, orden, página): el server lee `searchParams`, hace **un solo `getProducts`** con los filtros, y un listado compartido renderiza grid + breadcrumbs + orden + filtros + paginación + skeletons + estado vacío. Esto resuelve el bug de categoría, hace las vistas compartibles por URL (RF-23) y deja una sola implementación.
 
 ## Architecture Decisions
 
-- **Categorías dinámicas vía server→client props:** `app/layout.tsx` (server) ya envuelve el `Navbar`; ahí se llama `getAllCategories()` (ISR 2h) y se pasa `categories` al `Navbar` (client). `Navbar` las reenvía a `MenuList` (dropdown desktop) e `ItemsMenuMobile`. Se eliminan los arrays hardcodeados. Rationale: evita un fetch client-side y aprovecha el cache/ISR existente.
-- **Descripciones del menú:** el `CategoryType` de Strapi **no** trae descripción; el dropdown desktop pasa a mostrar solo el nombre de la categoría (se quita el subtítulo hardcodeado). Se anota como decisión.
-- **Buscador global:** componente `header-search.tsx` (client) con un form que hace `router.push('/products?search=<term>')`. La página `/products` (server async) lee `searchParams.search`, lo usa para el fetch inicial (`getProducts({ search })`) y lo pasa como `initialSearch` al wrapper, que siembra su estado. Compatible con la futura gestión de estado en URL de la Fase 4 (nuqs).
-- **Contadores con guard de hydration:** los accesos a favoritos (`useLovedProducts`) y "Mi pedido" (`useCart`) leen estado persistido en localStorage; el badge de cantidad se muestra solo después de montar (igual patrón que el card de Fase 2) para evitar mismatch de hidratación.
-- **"Mi pedido" = carrito existente:** en esta fase el ícono enlaza a `/cart` y muestra `items.length`. El envío del pedido por WhatsApp es de la **Fase 5** (anotado, no se implementa).
-- **FAB de WhatsApp:** componente `whatsapp-fab.tsx` montado en el layout, fijo abajo-derecha, con mensaje genérico. Se extiende `lib/whatsapp.ts` con un builder genérico (sin producto), con su test (cero dependencias, `node:test`).
-- **Verde solo para WhatsApp (RN-2)** y tokens del design system (Fase 1) en todos los elementos nuevos; sin clases `dark:`.
-- **Verificación:** `npm test` (suite node:test) + `npx tsc --noEmit` + `npx next lint` + `next build` (etapa de compilación) + chequeo visual con `npm run dev` + backend Strapi.
+- **Fuente única de datos:** ambas superficies usan `getProducts` (ya soporta `categoryId`, `search`, `isRebaja`, paginación). `/category` resuelve `getCategoryBySlug(slug) → category.id` y delega en `getProducts`. `getCategoryProducts` queda deprecado/eliminado. Resuelve el bug de >50.
+- **Estado en la URL con nuqs** (paquete recomendado en el Spec §10): `?search`, `?category`, `?offer`, `?sort`, `?page`. El **server** lee `searchParams` (async) y rinde el resultado; los **controles client** usan nuqs (`useQueryState`) para actualizar la URL (con `shallow: false` para re-fetch del server). Rationale: nuqs es exactamente la herramienta para "URL como fuente de verdad" multi-parámetro; evita el doble modelo de estado actual.
+- **Paginación por página (`?page=N`), server-driven:** reemplaza el "cargar más" acumulativo por controles prev/siguiente + "página X de Y". Es compartible, fixea el bug y unifica. (Open Question: mantener "cargar más" vs paginado; default = paginado.)
+- **Orden seguro vía allow-list:** `lib/sort.ts` mapea claves públicas (`novedades`, `precio_asc`, `precio_desc`, `nombre`) a strings de Strapi; función pura **testeada** (evita inyección de `sort` arbitrario en la query).
+- **Componentes de listado reutilizables** en `components/listing/` (sort, paginación, skeleton, estado vacío) + `components/ui/breadcrumb.tsx` (hand-authored estilo shadcn, sin CLI). Consumidos por ambas superficies → una sola implementación de UI de listado.
+- **Grid mobile 2 columnas compacto (RF-24):** ya se cumple (grid 2-col mobile + card compacta de Fase 2); el listado compartido conserva `grid-cols-2 ... xl:grid-cols-5`.
+- **Tokens del design system y sin `dark:`** en todo lo nuevo; inputs/controles usan los componentes base (Input, Button, dropdown-menu).
+- **Verificación:** `npm test` (suite node:test, incluye `lib/sort`) + `npx tsc --noEmit` + `npx next lint` + `next build` (compilación) + visual con `npm run dev` + backend Strapi.
 
 ## Grafo de dependencias
 
 ```
-getAllCategories (ya existe) ─► Task 1 (categorías dinámicas: layout → navbar → menús)
-                                      │
-lib/whatsapp.ts (ya existe) ─────────┼─► Task 2 (accesos header: carrito + contadores)   [navbar]
-                                      │         │
-                                      │         ▼
-                                      └─► Task 3 (buscador global)   [navbar + products page/wrapper]
-                                                │
-                                                ▼
-                                          Task 4 (FAB WhatsApp)   [layout + lib/whatsapp]
-                                                │
-                                                ▼
-                                          Task 5 (footer consistente)   [footer]
+Task 1 (data: sort + fetch unificado)      Task 2 (nuqs setup)
+            \                                   /
+             \                                 /
+              ▼                               ▼
+        Task 3 (controles: sort + paginación)        Task 4 (estados + breadcrumb)
+                          \                          /
+                           \                        /
+                            ▼                      ▼
+                    Task 5 (migrar /products)  ──► patrón ──►  Task 6 (migrar /category)
 ```
 
-Tasks 1, 2 y 3 tocan `navbar.tsx` → se hacen **en orden** (mismo archivo, evita conflictos). Tasks 4 y 5 son independientes del navbar.
+Tasks 1, 2 y 4 son independientes. Task 3 depende de 1 (opciones de orden) y 2 (nuqs). Tasks 5 y 6 dependen de 1-4; 6 reusa el patrón validado en 5.
 
 ## Task List
 
-### Phase 3A — Navegación principal
+### Phase 4A — Fundaciones
 
-#### Task 1: Categorías dinámicas en el menú (RF-18)
-**Descripción:** Reemplazar las categorías hardcodeadas del menú desktop y mobile por las que vienen de Strapi, pasadas desde el layout.
-
-**Criterios de aceptación:**
-- [ ] `app/layout.tsx` obtiene `getAllCategories()` y pasa `categories` al `Navbar`.
-- [ ] `Navbar` reenvía `categories` a `MenuList` e `ItemsMenuMobile`.
-- [ ] `MenuList` renderiza el dropdown desde `categories` (nombre + link `/category/[slug]`); se eliminan el array `components` y los subtítulos hardcodeados.
-- [ ] `ItemsMenuMobile` renderiza las categorías desde `categories`; se elimina la lista hardcodeada.
-- [ ] Edge case: si `categories` está vacío, el menú sigue mostrando "Productos" y "Sobre Nosotros" sin romperse.
-
-**Verificación:**
-- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
-- [ ] Manual: el dropdown desktop y el menú mobile listan las categorías reales del backend; los links navegan a la categoría correcta.
-
-**Dependencias:** Ninguna (usa `getAllCategories` existente).
-**Archivos probablemente tocados:** `app/layout.tsx`, `components/navbar.tsx`, `components/menu-list.tsx`, `components/items-menu-mobile.tsx`.
-**Scope estimado:** Medium.
-
-#### Task 2: Accesos del header — "Mi pedido" + contadores (RF-19)
-**Descripción:** Sumar al header el acceso al carrito ("Mi pedido") con contador y un contador a favoritos, manteniendo WhatsApp; todo con guard de hydration.
+#### Task 1: Capa de datos — orden y fetch unificado (RF-21, RF-22)
+**Descripción:** Permitir ordenar en `getProducts` mediante una allow-list segura y dejar lista la base para que categoría use `getProducts`.
 
 **Criterios de aceptación:**
-- [ ] El header muestra un ícono de carrito que enlaza a `/cart` con un badge de cantidad (`useCart().items.length`).
-- [ ] El ícono de favoritos muestra un badge con `useLovedProducts().lovedItems.length` y enlaza a `/loved-products`.
-- [ ] Los badges se muestran solo cuando hay ≥1 ítem y solo tras montar (sin hydration mismatch).
-- [ ] Se mantiene el acceso a WhatsApp; se usan tokens (`--primary`/`--whatsapp`) y sin `dark:`.
+- [ ] Nuevo `lib/sort.ts`: tipo `SortKey`, lista de opciones `{ key, label }` para la UI, y `toStrapiSort(key)` que mapea a string de Strapi (`novedades`→`createdAt:desc`, `precio_asc`→`price_mayoreo:asc`, `precio_desc`→`price_mayoreo:desc`, `nombre`→`productName:asc`), con fallback seguro a `novedades` para claves desconocidas.
+- [ ] `lib/sort.test.ts`: tests del mapeo y del fallback (node:test).
+- [ ] `getProducts` acepta `sort?: SortKey` y aplica `toStrapiSort`; sin `sort` mantiene `novedades`.
+- [ ] `getProducts` ya soporta `categoryId`/`search`/`isRebaja` (verificado) → no se requiere endpoint nuevo para categoría.
 
 **Verificación:**
-- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
-- [ ] Manual: agregar favoritos/ítems actualiza los contadores; los íconos navegan a `/loved-products` y `/cart`.
-
-**Dependencias:** Task 1 (mismo archivo `navbar.tsx`).
-**Archivos probablemente tocados:** `components/navbar.tsx` (+ opcional un pequeño componente de ícono con badge).
-**Scope estimado:** Small.
-
-#### Task 3: Buscador global en el header (RF-17)
-**Descripción:** Agregar un buscador en el header (desktop y mobile) que enrute a `/products?search=`, y hacer que la página de productos siembre la búsqueda desde la URL.
-
-**Criterios de aceptación:**
-- [ ] Nuevo `components/header-search.tsx` (client): input + submit que hace `router.push('/products?search=<term>')` (term codificado; vacío → `/products`).
-- [ ] `Navbar` monta el buscador en desktop y en mobile.
-- [ ] `app/(routes)/products/page.tsx` lee `searchParams.search` (Promise en Next 15), lo pasa a `getProducts({ search })` para el fetch inicial y como `initialSearch` al wrapper.
-- [ ] `products-client-wrapper.tsx` acepta `initialSearch` y siembra `searchTerm` (el input del filtro refleja el término; no hay doble fetch en el primer render).
-- [ ] Buscar desde cualquier página lleva a `/products` con resultados filtrados.
-
-**Verificación:**
-- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
-- [ ] Manual: buscar "cloro" desde el header en home/categoría navega a `/products?search=cloro` con resultados; el input del listado muestra "cloro".
-
-**Dependencias:** Task 1, Task 2 (mismo `navbar.tsx`).
-**Archivos probablemente tocados:** `components/header-search.tsx` (nuevo), `components/navbar.tsx`, `app/(routes)/products/page.tsx`, `app/(routes)/products/components/products-client-wrapper.tsx`.
-**Scope estimado:** Medium.
-
-### Checkpoint A — Header funcional
-- [ ] Categorías dinámicas, accesos con contador y buscador global operativos.
-- [ ] `tsc` + `lint` + compilación limpios; recorrido manual del header sin regresiones.
-- [ ] Review humano.
-
-### Phase 3B — Conversión y cierre
-
-#### Task 4: FAB de WhatsApp (RF-16)
-**Descripción:** Botón flotante de WhatsApp siempre visible que refuerza el canal de conversión.
-
-**Criterios de aceptación:**
-- [ ] `lib/whatsapp.ts` expone un builder genérico (sin producto), p. ej. `buildGeneralWhatsappUrl(message?)`, con su test en `lib/whatsapp.test.ts`.
-- [ ] Nuevo `components/whatsapp-fab.tsx`: botón fijo abajo-derecha (`fixed`, z alto), color `--whatsapp`, accesible (`aria-label`), abre la URL en nueva pestaña.
-- [ ] Montado en `app/layout.tsx`, visible en todas las páginas, sin tapar el footer ni el contenido en mobile.
-
-**Verificación:**
-- [ ] `npm test` (incluye el nuevo caso) + `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
-- [ ] Manual: el FAB aparece en todas las páginas y abre WhatsApp con el mensaje genérico.
-
-**Dependencias:** Ninguna (independiente del navbar).
-**Archivos probablemente tocados:** `lib/whatsapp.ts`, `lib/whatsapp.test.ts`, `components/whatsapp-fab.tsx` (nuevo), `app/layout.tsx`.
-**Scope estimado:** Small.
-
-#### Task 5: Footer consistente (RF-20)
-**Descripción:** Alinear el footer al design system y a los accesos del header (las clases duplicadas ya se corrigieron en Fase 1).
-
-**Criterios de aceptación:**
-- [ ] El footer usa tokens (sin grises hardcodeados sueltos donde aplique) y el wordmark consistente (ya hecho en Fase 1, verificar).
-- [ ] Agrega accesos útiles coherentes con el header (Productos, Nosotros y, si aporta, Favoritos / Mi pedido).
-- [ ] Sin clases `dark:`; layout responsive correcto.
-
-**Verificación:**
-- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
-- [ ] Manual: el footer se ve alineado al header y al resto del sistema, sin regresiones.
+- [ ] `npm test` (incluye `lib/sort`) + `npx tsc --noEmit` limpios.
+- [ ] Manual: `getProducts({ sort: 'precio_asc' })` genera `sort[0]=price_mayoreo:asc`.
 
 **Dependencias:** Ninguna.
-**Archivos probablemente tocados:** `components/footer.tsx`.
+**Archivos probablemente tocados:** `lib/sort.ts` (nuevo), `lib/sort.test.ts` (nuevo), `lib/data/strapi.ts`.
 **Scope estimado:** Small.
 
-### Checkpoint B — Fase 3 completa
-- [ ] Header (categorías dinámicas + buscador + accesos), FAB de WhatsApp y footer consistentes.
-- [ ] `npm test` + `tsc` + `lint` + compilación limpios; recorrido manual (home, listado, categoría, detalle) sin regresiones.
-- [ ] Listo para Fase 4 (listado/categoría: paginación unificada, breadcrumbs, orden, filtros).
+#### Task 2: Estado en URL — nuqs (RF-23)
+**Descripción:** Adoptar nuqs como gestor de estado en la URL para los controles de listado.
+
+**Criterios de aceptación:**
+- [ ] `nuqs` instalado (dependencia).
+- [ ] `NuqsAdapter` (adapter de Next App Router) envuelve la app en `app/layout.tsx`.
+- [ ] No rompe el `?search=` introducido en Fase 3 (sigue navegando a `/products?search=`).
+
+**Verificación:**
+- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
+- [ ] Manual: un control de prueba con `useQueryState` actualiza la URL y dispara re-render del server.
+
+**Dependencias:** Ninguna.
+**Archivos probablemente tocados:** `package.json`, `app/layout.tsx`.
+**Scope estimado:** Small.
+
+#### Task 3: Controles de listado — orden y paginación (RF-22, RF-23)
+**Descripción:** Componentes client que reflejan/actualizan el estado en la URL para ordenar y paginar.
+
+**Criterios de aceptación:**
+- [ ] `components/listing/sort-select.tsx`: dropdown (usa `dropdown-menu` o `Input`/`select` estilizado) con las opciones de `lib/sort`, sincronizado a `?sort` vía nuqs (`shallow: false`).
+- [ ] `components/listing/pagination-controls.tsx`: prev/siguiente + "Página X de Y", sincronizado a `?page` vía nuqs; deshabilita extremos correctamente.
+- [ ] Accesibles (labels/aria), tokens, sin `dark:`.
+
+**Verificación:**
+- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
+- [ ] Manual: cambiar orden/página actualiza la URL y la grilla.
+
+**Dependencias:** Task 1, Task 2.
+**Archivos probablemente tocados:** `components/listing/sort-select.tsx` (nuevo), `components/listing/pagination-controls.tsx` (nuevo).
+**Scope estimado:** Medium.
+
+#### Task 4: Estados y breadcrumbs (RF-25, RF-22)
+**Descripción:** Componentes de carga, vacío y migas de pan reutilizables.
+
+**Criterios de aceptación:**
+- [ ] `components/ui/breadcrumb.tsx`: breadcrumb estilo shadcn (hand-authored), con separador (chevron lucide) y tokens.
+- [ ] `components/listing/product-grid-skeleton.tsx`: grilla de skeletons que matchea el layout del grid (2→5 cols), parametrizable por cantidad.
+- [ ] `components/listing/empty-state.tsx`: estado vacío con mensaje + CTA (p. ej. limpiar filtros / ver todos), tokens.
+- [ ] Sin `dark:`.
+
+**Verificación:**
+- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
+- [ ] Manual: render aislado de skeleton/empty/breadcrumb se ve consistente con el sistema.
+
+**Dependencias:** Ninguna.
+**Archivos probablemente tocados:** `components/ui/breadcrumb.tsx` (nuevo), `components/listing/product-grid-skeleton.tsx` (nuevo), `components/listing/empty-state.tsx` (nuevo).
+**Scope estimado:** Medium.
+
+### Checkpoint A — Fundaciones y primitivos
+- [ ] `npm test` + `tsc` + `lint` + compilación limpios.
+- [ ] Controles, estados y breadcrumb existen y compilan.
+- [ ] Review humano antes de migrar superficies.
+
+### Phase 4B — Migración de superficies
+
+#### Task 5: Migrar `/products` al listado server-driven (RF-21, 22, 23, 24, 25)
+**Descripción:** Reescribir `/products` para que el server lea los `searchParams` (page, search, sort, category, offer), haga `getProducts` con esos filtros y renderice el listado unificado con breadcrumbs, orden, filtros, paginación y estados.
+
+**Criterios de aceptación:**
+- [ ] `app/(routes)/products/page.tsx` lee `searchParams` (page/search/sort/category/offer), hace `getProducts(...)` server-side y pasa data + meta al render.
+- [ ] Breadcrumb "Inicio › Productos"; controles de orden, filtro por categoría y toggle "Solo ofertas"; paginación por página; skeleton/empty integrados.
+- [ ] Se reemplaza el modelo de fetch client-side acumulativo de `products-client-wrapper.tsx` (los controles pasan a nuqs; el wrapper se simplifica o elimina); `products-filter.tsx` usa los controles/URL.
+- [ ] Grid 2-col mobile → 5 xl conservado (RF-24).
+
+**Verificación:**
+- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
+- [ ] Manual: en `/products`, buscar/filtrar/ordenar/paginar actualiza la URL y los resultados; recargar la URL reproduce el mismo estado; estados de carga/vacío correctos.
+
+**Dependencias:** Tasks 1-4.
+**Archivos probablemente tocados:** `app/(routes)/products/page.tsx`, `app/(routes)/products/components/products-client-wrapper.tsx`, `app/(routes)/products/components/products-filter.tsx`.
+**Scope estimado:** Medium/Large.
+
+#### Task 6: Migrar `/category/[slug]` al listado unificado (RF-21 fix, 22, 23, 25)
+**Descripción:** Migrar categoría al mismo patrón server-driven, resolviendo el bug de >50 productos y agregando breadcrumbs/orden/paginación.
+
+**Criterios de aceptación:**
+- [ ] `app/(routes)/category/[categorySlug]/page.tsx` resuelve `getCategoryBySlug` y usa `getProducts({ categoryId, page, search, sort })` server-side (sin tope de 50; pagina todo).
+- [ ] Breadcrumb "Inicio › Categoría"; orden, búsqueda y paginación reutilizando los controles compartidos; skeleton/empty.
+- [ ] Se elimina el filtrado client-side con tope (`category-client-wrapper.tsx`, `search.tsx`) reemplazándolo por el listado unificado; `getCategoryProducts` se deprecia/elimina si queda sin uso.
+
+**Verificación:**
+- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
+- [ ] Manual: una categoría con >50 productos muestra todos vía paginación; orden/búsqueda/URL funcionan; breadcrumbs correctos.
+
+**Dependencias:** Tasks 1-4 (y patrón de Task 5).
+**Archivos probablemente tocados:** `app/(routes)/category/[categorySlug]/page.tsx`, `category-client-wrapper.tsx`, `category/[categorySlug]/components/search.tsx`, `lib/data/strapi.ts` (deprecar `getCategoryProducts`).
+**Scope estimado:** Medium.
+
+### Checkpoint B — Fase 4 completa
+- [ ] Listado y categoría comparten un patrón server-driven con estado en URL; el bug de >50 está resuelto.
+- [ ] Breadcrumbs, orden, filtros, paginación y estados de carga/vacío presentes en ambas.
+- [ ] `npm test` + `tsc` + `lint` + compilación limpios; recorrido manual sin regresiones.
+- [ ] Listo para Fase 5 (conversión: WhatsApp + "Mi pedido" multi-producto).
 
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| Layout fetchea categorías en cada render | Bajo | `getAllCategories` ya tiene ISR 2h + cache tag; costo despreciable. |
-| Hydration mismatch en contadores (estado persistido) | Medio | Guard `mounted` antes de mostrar badges (patrón ya usado en el card). |
-| `searchParams` como Promise en Next 15 mal tipado | Medio | Tipar `searchParams: Promise<{ search?: string }>` y `await`; validar con `tsc`. |
-| Buscador global duplica la búsqueda interna del listado | Bajo | El header solo navega/siembra; el filtrado sigue en el wrapper (single source). |
-| Menú dinámico sin descripciones se ve pobre | Bajo | Mostrar nombre claro; descripciones quedan fuera (no existen en Strapi). |
-| `next build` no completa sin `NEXT_PUBLIC_BACKEND_URL` | Bajo | Gate real = `tsc` + `lint` + compilación + tests; visual en dev. |
+| nuqs requiere red para instalar | Bajo | `npm install` con red habilitada (ya usado en fases previas). |
+| Cambiar "cargar más" por paginado altera la UX esperada | Medio | Decisión explícita (default paginado, compartible); Open Question para confirmar. |
+| `sort` arbitrario en la query (inyección) | Medio | Allow-list en `lib/sort.ts` con fallback; nunca pasar el valor crudo a Strapi. |
+| `searchParams` dinámicos desactivan ISR del listado | Bajo | Es el comportamiento esperado (vistas dinámicas por filtro); home/detalle conservan ISR. |
+| Migración rompe el `?search=` de Fase 3 | Medio | Mantener el mismo nombre de parámetro `search`; verificar el flujo del header. |
+| `next build` no completa sin `NEXT_PUBLIC_BACKEND_URL` | Bajo | Gate real = `npm test` + `tsc` + `lint` + compilación; visual en dev. |
 
 ## Open Questions
-- **Buscador en mobile:** ¿lo mostramos como una fila siempre visible bajo la barra, o desplegable (ícono lupa que abre el input)? Default propuesto: fila compacta siempre visible (menos fricción).
-- **Footer:** ¿incluir la lista de categorías dinámicas también en el footer, o solo links fijos (Productos/Nosotros/Favoritos/Pedido)? Default: links fijos (categorías dinámicas opcionales).
-- **FAB vs ícono WhatsApp del header:** ¿mantenemos ambos (header + FAB) o el FAB reemplaza el del header? Default: mantener ambos (header para desktop, FAB refuerza en scroll/mobile).
+- **Paginación:** ¿paginado por página (default, compartible) o mantener "Cargar más" (infinite-ish)? El plan asume **paginado**.
+- **Filtros en `/products`:** ¿alcanza con categoría + "solo ofertas", o también rango de precio? (No hay precio mínimo/máximo indexado; el rango requeriría más trabajo). Default: categoría + ofertas.
+- **Búsqueda en categoría:** ¿mantenemos un buscador dentro de la categoría, o la búsqueda global del header (que va a `/products`) es suficiente? Default: mantener búsqueda dentro de la categoría (filtra dentro del rubro).
