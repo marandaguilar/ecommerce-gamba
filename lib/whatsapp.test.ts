@@ -1,7 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { buildWhatsappUrl, WHATSAPP_PHONE } from "./whatsapp.ts";
+import {
+  buildWhatsappUrl,
+  buildGeneralWhatsappUrl,
+  WHATSAPP_PHONE,
+} from "./whatsapp.ts";
 
 test("buildWhatsappUrl apunta al teléfono configurado", () => {
   const url = buildWhatsappUrl({ productName: "Cloro", slug: "cloro" });
@@ -19,4 +23,16 @@ test("buildWhatsappUrl incluye el link del producto cuando se pasa baseUrl", () 
     "https://gamba.com"
   );
   assert.ok(url.includes(encodeURIComponent("https://gamba.com/product/cloro")));
+});
+
+test("buildGeneralWhatsappUrl apunta al teléfono con un mensaje por defecto", () => {
+  const prefix = `https://wa.me/${WHATSAPP_PHONE}?text=`;
+  const url = buildGeneralWhatsappUrl();
+  assert.ok(url.startsWith(prefix));
+  assert.ok(url.length > prefix.length);
+});
+
+test("buildGeneralWhatsappUrl codifica un mensaje personalizado", () => {
+  const url = buildGeneralWhatsappUrl("Hola 👋");
+  assert.ok(url.includes(encodeURIComponent("Hola 👋")));
 });

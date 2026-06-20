@@ -31,3 +31,16 @@ export function buildWhatsappUrl(
   const message = buildProductMessage(product, baseUrl);
   return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
 }
+
+/** Mensaje por defecto del canal (FAB / contacto general). */
+const DEFAULT_GENERAL_MESSAGE = "Hola, quiero más información sobre sus productos";
+
+/**
+ * URL de WhatsApp para contacto general (sin producto). Útil para el FAB
+ * y accesos del header.
+ */
+export function buildGeneralWhatsappUrl(
+  message: string = DEFAULT_GENERAL_MESSAGE
+): string {
+  return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+}

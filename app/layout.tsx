@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, Sora } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import WhatsappFab from "@/components/whatsapp-fab";
 import { Toaster } from "sonner";
 import NextTopLoader from "nextjs-toploader";
 import { getAllCategories } from "@/lib/data/strapi";
@@ -55,6 +56,7 @@ export default async function RootLayout({
         {children}
         <Toaster />
         <Footer />
+        <WhatsappFab />
       </body>
     </html>
   );
