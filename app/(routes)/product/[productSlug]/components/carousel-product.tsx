@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { ImageOff } from "lucide-react";
+import { ImageOff, ZoomIn } from "lucide-react";
 
 import {
   Carousel,
@@ -15,6 +15,7 @@ import {
 import { ImageType } from "@/types/product";
 import { resolveGalleryImages } from "@/lib/gallery";
 import { cn } from "@/lib/utils";
+import ImageZoom from "./image-zoom";
 
 interface CarouselProductProps {
   images?: ImageType[] | null;
@@ -27,6 +28,7 @@ const CarouselProduct = (props: CarouselProductProps) => {
 
   const [api, setApi] = useState<CarouselApi>();
   const [selected, setSelected] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
 
   // Sincroniza el índice activo con embla (flechas, swipe y thumbnails).
   useEffect(() => {
@@ -61,7 +63,12 @@ const CarouselProduct = (props: CarouselProductProps) => {
         <CarouselContent>
           {gallery.map((image, index) => (
             <CarouselItem key={image.id}>
-              <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-muted">
+              <button
+                type="button"
+                onClick={() => setZoomOpen(true)}
+                aria-label={`Ampliar imagen ${index + 1} de ${productName}`}
+                className="group relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-lg bg-muted"
+              >
                 <Image
                   src={image.url}
                   alt={`${productName} — imagen ${index + 1}`}
@@ -70,7 +77,10 @@ const CarouselProduct = (props: CarouselProductProps) => {
                   className="object-contain p-4"
                   priority={index === 0}
                 />
-              </div>
+                <span className="absolute bottom-3 right-3 flex size-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md transition group-hover:scale-110">
+                  <ZoomIn className="size-4" />
+                </span>
+              </button>
             </CarouselItem>
           ))}
         </CarouselContent>
@@ -108,6 +118,14 @@ const CarouselProduct = (props: CarouselProductProps) => {
             </button>
           ))}
         </div>
+      )}
+
+      {zoomOpen && (
+        <ImageZoom
+          src={gallery[selected].url}
+          alt={`${productName} — imagen ${selected + 1}`}
+          onClose={() => setZoomOpen(false)}
+        />
       )}
     </div>
   );
