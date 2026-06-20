@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProductType } from "@/types/product";
 import { CategoryType } from "@/types/category";
-import ProductCard from "./carousel-products";
+import ProductCard from "@/components/shared/product-card";
 import ProductsFilter from "./products-filter";
 import { Button } from "@/components/ui/button";
 import ProductsCounter from "@/components/shared/products-counter";
@@ -76,6 +76,7 @@ export default function ProductsClientWrapper({
       params.append("fields[4]", "price_mayoreo");
       params.append("fields[5]", "active");
       params.append("fields[6]", "description");
+      params.append("fields[7]", "isRebaja");
 
       params.append("pagination[page]", targetPage.toString());
       params.append("pagination[pageSize]", PAGE_SIZE.toString());
@@ -176,8 +177,12 @@ export default function ProductsClientWrapper({
           ) : isLoading && displayedProducts.length === 0 ? (
             <p className="col-span-full text-center py-8">Cargando productos...</p>
           ) : displayedProducts.length > 0 ? (
-            displayedProducts.map((product: ProductType) => (
-              <ProductCard key={product.id} product={product} />
+            displayedProducts.map((product: ProductType, index: number) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                priority={index < 5}
+              />
             ))
           ) : (
             <p className="col-span-full text-center py-8">
