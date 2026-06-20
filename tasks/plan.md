@@ -1,133 +1,141 @@
-# Implementation Plan — Fase 6: Detalle de producto (galería)
+# Implementation Plan — Fase 7: Limpieza
 
-> Deriva de `Spec.md` → sección 11, Fase 6. Cubre **RF-26 a RF-28**: galería mejorada (`next/image`, thumbnails y/o zoom, navegación clara), jerarquía de info y relacionados con el card unificado.
+> Deriva de `Spec.md` → sección 11, Fase 7. Cubre **RNF-1** (`<img>`→`next/image`), **RNF-4** (un único design system, sin variantes ni código muerto) y **Spec §9** (remover Stripe/checkout sin uso). Cierra el rediseño.
 > **Read-only plan.** La implementación es responsabilidad de `/g-build`.
-> Fases 1 (design system), 2 (product card), 3 (header/nav), 4 (listado/categoría) y 5 (conversión) ya completas — ver git log de `redesign/phase-1-design-foundations`.
+> Fases 1-6 ya completas — ver git log de `redesign/phase-1-design-foundations`.
 
 ## Overview
 
-El detalle de producto ya tiene **la mitad de la Fase 6 hecha** por arrastre de fases anteriores:
+Tras las fases 1-6, queda **deuda muerta** acumulada del estado previo, ya inventariada por grep (importadores reales):
 
-- **RF-27 (jerarquía de info + CTAs)** ya se resolvió en Fase 5 (Task 4 `info-product.tsx`): nombre + categoría + **precios mayorista-first** + descripción + CTAs WhatsApp/"Agregar a mi pedido"/favorito-toggle. Esta fase **no lo re-implementa**, solo lo conserva.
-- **RF-28 (relacionados con card unificado)** ya usa `ProductCard` (`related-products-server.tsx`). Falta solo **alinear su grid** al patrón compacto 2-col mobile del listado (hoy arranca en `grid-cols-1`) y al espaciado del design system.
+- **Último `<img>` vivo:** `components/shared/product-image-miniature.tsx` (usado por `cart-item` y `loved-item-product`) sigue con `<img>` nativo → falta migrar a `next/image` (RNF-1). El otro `<img>` está en `choose-category.tsx`, que es **código muerto** (se va con el archivo).
+- **Cluster de código muerto del listado/categoría legacy** (sin ningún importador vivo, todos interdependientes entre sí):
+  - `components/choose-category.tsx` (no lo importa nadie)
+  - `app/(routes)/category/[categorySlug]/components/filters-controls-category.tsx` (sin importadores)
+  - `app/(routes)/category/[categorySlug]/components/filter-purchase.tsx` (solo lo importa el anterior, muerto)
+  - `api/` legacy completo: `getProducts.tsx`, `getProductBySlug.tsx`, `getProductField.tsx`, `getCategoryProduct.tsx` (solo los importan los dos archivos muertos de arriba; la capa viva es `lib/data/strapi.ts`)
+  - `types/response.ts` (solo lo importa `choose-category`)
+- **Archivos muertos sueltos:** `components/skeletonSchema.tsx` (sin importadores), `components/icon-button.tsx` (huérfano desde Fase 5).
+- **Ruta huérfana de checkout:** `app/(routes)/success/page.tsx` — no la linkea nadie y referencia `/images/success.png` que **ni existe** (asset roto). Resto del flujo Stripe (Spec §9).
+- **Dependencias sin uso:** `@stripe/react-stripe-js`, `@stripe/stripe-js` (cero imports), `qs` (cero imports en app/components/lib). `nextjs-toploader` **sí** se usa (`app/layout.tsx`) → se conserva. `next-themes` ya se removió en Fase 1.
+- **Tokens muertos del preset shadcn:** `--chart-1..5` + sus `--color-chart-*` en `@theme inline` (`app/globals.css`) — nunca se usan; cierra la Open Question de Fase 1.
 
-Lo que **falta de verdad** es la **galería (RF-26)**, que es el último resto de deuda visual y de performance:
-
-- `carousel-product.tsx` usa **`<img>` nativo** (no `next/image`) → impacto en LCP/CLS (RNF-1), sin `sizes` ni contenedor de aspecto fijo.
-- **Sin thumbnails**: en productos con varias imágenes solo se navega con flechas; no hay vista de conjunto ni acceso directo a una imagen.
-- **Sin zoom**: no se puede ver el detalle de la imagen (relevante para artículos de limpieza: etiquetas, presentación).
-- **Sin placeholder de marca** cuando el producto no tiene imágenes (Spec §8: `return null` actual → galería vacía/rota).
-- El **skeleton** (`skeleton-product.tsx`) usa tamaños en px fijos que no matchean el layout 2-col real ni los tokens del sistema.
-
-Esta fase reconstruye la galería sobre el carousel embla ya disponible (sin nuevas dependencias): `next/image` + contenedor de aspecto + placeholder, thumbnails sincronizados, zoom hand-rolled (sin radix-dialog), y deja skeleton/relacionados consistentes.
+Esta fase **borra todo lo muerto y migra el último `<img>`**, sin agregar features. La red de seguridad es la suite existente (**28 tests**) + `tsc`/`lint`/`build` + grep que pruebe que no quedan imports colgados.
 
 ## Architecture Decisions
 
-- **Reutilizar el carousel embla existente (`components/ui/carousel.tsx`), cero deps nuevas (RNF-5):** ya expone `setApi` → da acceso a la API embla para sincronizar thumbnails (`scrollTo`, `selectedScrollSnap`, evento `select`). No se agrega `embla-carousel-react` extra ni librerías de lightbox.
-- **`next/image` con contenedor de aspecto fijo (RNF-1):** la imagen principal pasa a `Image fill object-contain` dentro de un contenedor con relación de aspecto estable (p. ej. `aspect-square`/`aspect-[4/3]`) → elimina CLS y mejora LCP. La primera imagen marca `priority`. `sizes` acorde al layout 2-col del detalle.
-- **Placeholder de marca cuando no hay imágenes (Spec §8):** función pura y testeable que normaliza `images` (filtra vacíos / cae a placeholder) → la galería nunca renderiza `null` ni un `<img>` roto. Único punto con TDD real de la fase (`lib/gallery.ts` o helper colocalizado + test node:test).
-- **Thumbnails sincronizados bidireccionalmente:** click en thumb → `api.scrollTo(i)`; `select` de embla → resalta el thumb activo y hace scroll del thumb a la vista. Si hay **una sola imagen**, no se renderiza la tira de thumbnails (evita ruido).
-- **Zoom hand-rolled sin radix-dialog (RNF-5):** overlay propio (precedente: breadcrumb hand-authored de Fase 4) — `fixed inset-0` con backdrop, imagen ampliada, cierre por botón / click-outside / `Esc`, `aria-modal` + foco. RF-26 pide thumbnails **y/o** zoom: con thumbnails ya se cumple el mínimo, así que el zoom es **mejora opcional** (ver Open Questions) — se implementa simple, sin pan/zoom-gestures.
-- **Relacionados alineados al listado (RF-28/24):** el grid de `related-products-server.tsx` adopta `grid-cols-2 ... xl:grid-cols-5` + gaps del listado, para densidad consistente en mobile. Sigue usando `ProductCard` (ya `next/image`).
-- **Galería como componente client aislado:** la lógica de thumbnails/zoom (estado, `setApi`) vive en el componente de galería (`carousel-product.tsx`, se conserva el nombre de archivo para minimizar churn); `page.tsx` (server) solo le pasa `images` + `productName`. No se toca el fetch/ISR.
-- **Verificación:** `npm test` (suma el test del helper de placeholder) + `npx tsc --noEmit` + `npx next lint` + `next build` (compilación). Lo visual/runtime de la galería (LCP, sin CLS, navegación, zoom) se valida con `npm run dev` + backend y **Chrome DevTools** (skill `google-browser-testing-with-devtools`): consola limpia, screenshot, thumbnails y zoom funcionando.
+- **Sin TDD nuevo (deleciones/migración):** la skill TDD excluye explícitamente cambios puros de borrado/config. La regresión se cubre con la **suite existente verde (28)** + `tsc --noEmit` (atrapa imports rotos) + `next lint` + `next build` (compilación) + grep de importadores. Solo `ProductImageMiniature` cambia comportamiento (UI) y se valida visualmente.
+- **Borrado en bloque del cluster muerto, verificado por el compilador:** como `choose-category`, `filters-controls-category`, `filter-purchase`, `api/*` y `types/response` son **mutuamente dependientes y sin raíz viva**, se eliminan juntos; `tsc`/`build` confirman que nada vivo los referenciaba (ya verificado por grep en el plan).
+- **`next/image` en la miniatura con dimensiones explícitas:** `ProductImageMiniature` pasa a `Image` con `width/height` (o contenedor + `fill`) y `sizes`, conservando el click-to-navigate y el tamaño actual (`w-24 h-24` / `sm:h-32`). Mismo patrón de host Strapi ya configurado en `next.config`.
+- **Remover Stripe y `qs` del `package.json` + lockfile:** Spec §9 decide remover (no dejar dependencia sin uso). Se corre `npm install` para actualizar `package-lock.json`. `qs` se borra solo tras confirmar cero imports (ya verificado).
+- **Quitar tokens `--chart-*`:** elimina las 5 definiciones y sus 5 mapeos `--color-chart-*` en `@theme inline`; no hay clases `*-chart-*` en el código. Cierra la Open Question de Fase 1 (RNF-4).
+- **Disciplina de scope:** solo se borra lo probado-muerto y se migra el `<img>` restante. No se renombra `carousel-product.tsx`→`product-gallery.tsx` (Open Question de Fase 6, cosmético) salvo que se decida explícitamente.
+- **Verificación transversal:** tras cada task, `npm test` (28, sin regresión) + `npx tsc --noEmit` + `npx next lint` + `next build` (compilación) + grep confirmando que el símbolo/archivo borrado no se referencia.
 
 ## Grafo de dependencias
 
 ```
-Task 1 (next/image + aspecto + placeholder)   ← base de la galería (incl. helper testeable)
-        │
-        ├──────────────► Task 2 (thumbnails sincronizados)
-        │                         │
-        └──────────────► Task 3 (zoom hand-rolled)   ← opcional, sobre la galería
-                                  │
-Task 4 (skeleton + relacionados alineados)  ← soporte, independiente del 2/3
+Task 1 (miniatura → next/image)        ← único cambio de UI, independiente
+Task 2 (borrar cluster muerto + api/ legacy + response.ts)   ← deleción en bloque
+Task 3 (borrar sueltos: skeletonSchema, icon-button, ruta success)
+Task 4 (remover deps: @stripe/*, qs)   ← package.json + lockfile
+Task 5 (remover tokens --chart-*)      ← globals.css, cierra OQ Fase 1
 ```
 
-Orden: primero la imagen principal correcta (next/image + placeholder, ya shippable), luego thumbnails, luego zoom (opcional), y por último el pulido de skeleton/relacionados.
+Todas las tareas son en gran medida independientes (no hay orden forzado por dependencias, ya que se borra código sin importadores vivos). Se ordenan de mayor a menor riesgo: primero la migración con cambio de UI (Task 1), luego las deleciones de código (2-3), y por último deps y tokens (4-5).
 
 ---
 
 ## Task List
 
-### Phase 6A — Galería
+### Phase 7A — Migración del último `<img>` y borrado de código muerto
 
-#### Task 1 — Imagen principal con `next/image`, aspecto fijo y placeholder — M
+#### Task 1 — `ProductImageMiniature` → `next/image` (RNF-1) — S
 
-**Descripción:** Migrar la imagen principal de la galería de `<img>` a `next/image` dentro de un contenedor de aspecto estable, con `priority` en la primera, `sizes` acorde al layout, y un **placeholder de marca** cuando el producto no tiene imágenes (vía helper puro testeable).
+**Descripción:** Migrar la miniatura de `<img>` a `next/image`, conservando el comportamiento (click navega al producto) y el tamaño actual. Es el único `<img>` en código vivo.
 
 **Criterios de aceptación:**
-- [ ] La imagen principal usa `Image` (`fill`, `object-contain`) en un contenedor con relación de aspecto fija (sin CLS); primera imagen `priority`, con `sizes` acorde a 2-col del detalle.
-- [ ] Producto sin imágenes → placeholder de marca (no `null`, no `<img>` roto). Helper puro normaliza `images` (filtra vacíos / fallback).
-- [ ] Sin `<img>` nativo en la imagen principal; sin `dark:`; usa tokens del sistema.
+- [ ] Usa `next/image` (con `width/height` o contenedor + `fill` + `sizes`); sin `<img>` nativo. Mantiene `w-24 h-24` / `sm:h-32` y el click a `/product/${slug}`.
+- [ ] Maneja `url` vacía sin romper (fallback simple, p. ej. no renderizar imagen rota).
+- [ ] Sigue usado correctamente por `cart-item` y `loved-item-product` (sin cambios de API del componente).
 
 **Verificación:**
-- [ ] `npm test` — nuevos casos del helper: lista normal se devuelve igual; lista vacía/`null`/imágenes sin `url` → fallback de placeholder.
-- [ ] `npx tsc --noEmit`, `npx next lint`, `next build` (compilación).
-- [ ] Manual/DevTools: imagen nítida sin salto de layout; producto sin imágenes muestra placeholder.
+- [ ] `npm test` (28, sin regresión), `npx tsc --noEmit`, `npx next lint`, `next build` (compilación).
+- [ ] `grep "<img" app/ components/` → solo queda en archivos que se borrarán en Task 2 (o cero tras Task 2).
+- [ ] Manual: miniaturas en "Mi pedido" y favoritos se ven y navegan.
 
 **Dependencias:** Ninguna.
-**Archivos:** `app/(routes)/product/[productSlug]/components/carousel-product.tsx`, helper nuevo (`lib/gallery.ts` + `lib/gallery.test.ts`), opcional `page.tsx` (sizes/layout). — **Scope: M**
+**Archivos:** `components/shared/product-image-miniature.tsx`. — **Scope: S**
 
-#### Task 2 — Thumbnails sincronizados con la imagen principal — M
+#### Task 2 — Borrar cluster muerto de listado/categoría + `api/` legacy + `types/response` — M
 
-**Descripción:** Agregar una tira de thumbnails (`next/image`) debajo de la imagen principal, sincronizada con el carousel embla vía `setApi`: click en thumb mueve la principal, el thumb activo se resalta. Se oculta si hay una sola imagen.
-
-**Criterios de aceptación:**
-- [ ] Tira de thumbnails (`next/image`) bajo la principal; click → `api.scrollTo(i)`.
-- [ ] El thumb del slide activo se resalta (borde/anillo con token `--primary`) y se actualiza con el evento `select` de embla y con las flechas.
-- [ ] Con una sola imagen no se renderiza la tira. Thumbnails accesibles (`button aria-label`).
-- [ ] Sin loops de re-render (suscripción/limpieza correcta al `select`).
-
-**Verificación:**
-- [ ] `npx tsc --noEmit`, `npx next lint`, `next build` (compilación); `npm test` sin regresiones.
-- [ ] Manual/DevTools: click en thumbs cambia la principal y resalta; flechas actualizan el thumb activo; consola limpia.
-
-**Dependencias:** Task 1.
-**Archivos:** `app/(routes)/product/[productSlug]/components/carousel-product.tsx`. — **Scope: M**
-
-### Checkpoint A — Galería navegable y performante
-- [ ] `npm test` verde, build compila.
-- [ ] La imagen principal es `next/image` sin CLS, con thumbnails que navegan; placeholder cuando no hay imágenes.
-
-### Phase 6B — Zoom y soporte
-
-#### Task 3 — Zoom de imagen (overlay hand-rolled, opcional) — M
-
-**Descripción:** Permitir ampliar la imagen principal en un overlay propio (sin radix-dialog): click o botón "ampliar" abre `fixed inset-0` con backdrop e imagen grande; cierre por botón, click-outside y `Esc`.
+**Descripción:** Eliminar el código muerto interdependiente del modelo de datos client-side anterior, ya reemplazado por `lib/data/strapi.ts` (Fase 4).
 
 **Criterios de aceptación:**
-- [ ] Click en la imagen principal (o botón "ampliar") abre el overlay con la imagen actual en grande (`next/image`, `object-contain`).
-- [ ] Cierre por botón ✕, click en backdrop y tecla `Esc`; `role="dialog"`/`aria-modal`, foco gestionado, scroll del body bloqueado mientras está abierto.
-- [ ] Sin nuevas dependencias; tokens del sistema; sin `dark:`.
+- [ ] Borrados: `components/choose-category.tsx`, `app/(routes)/category/[categorySlug]/components/filters-controls-category.tsx`, `app/(routes)/category/[categorySlug]/components/filter-purchase.tsx`, el directorio `api/` completo (`getProducts.tsx`, `getProductBySlug.tsx`, `getProductField.tsx`, `getCategoryProduct.tsx`) y `types/response.ts`.
+- [ ] `lib/data/strapi.ts` (capa viva) intacta y sin referencias a lo borrado.
 
 **Verificación:**
-- [ ] `npx tsc --noEmit`, `npx next lint`, `next build` (compilación); `npm test` sin regresiones.
-- [ ] Manual/DevTools: abre/cierra por los 3 medios; `Esc` y click-outside funcionan; consola limpia.
+- [ ] `npx tsc --noEmit` (sin imports rotos), `npx next lint`, `next build` (compilación), `npm test` (28).
+- [ ] `grep -rn "api/getProducts\|api/getProductBySlug\|api/getProductField\|api/getCategoryProduct\|choose-category\|filter-purchase\|filters-controls-category\|types/response"` → cero coincidencias en código vivo.
 
-**Dependencias:** Task 1 (opcionalmente Task 2 para abrir desde la imagen activa).
-**Archivos:** `app/(routes)/product/[productSlug]/components/carousel-product.tsx` (+ posible `image-zoom.tsx` colocalizado). — **Scope: M**
+**Dependencias:** Ninguna (todo sin importador vivo, verificado).
+**Archivos:** (borrados) ver arriba. — **Scope: M**
 
-#### Task 4 — Skeleton y relacionados alineados al design system — S
+#### Task 3 — Borrar archivos sueltos muertos + ruta `success` — S
 
-**Descripción:** Actualizar `skeleton-product.tsx` para que matchee el layout real 2-col (galería + info) con tokens y aspecto, y alinear el grid de `related-products-server.tsx` al patrón compacto 2-col mobile del listado.
+**Descripción:** Eliminar `skeletonSchema.tsx`, `icon-button.tsx` (huérfano de Fase 5) y la ruta de checkout `success` (huérfana, Stripe, con asset inexistente).
 
 **Criterios de aceptación:**
-- [ ] Skeleton refleja el layout 2-col (bloque de galería con aspecto + tira de thumbs + líneas de info y CTAs), sin tamaños px arbitrarios que descuadren.
-- [ ] Grid de relacionados usa `grid-cols-2 ... xl:grid-cols-5` + gaps del listado; título con `font-display` y espaciado consistente.
-- [ ] Sin `dark:`; usa `Skeleton` y tokens.
+- [ ] Borrados: `components/skeletonSchema.tsx`, `components/icon-button.tsx`, `app/(routes)/success/` (page.tsx y carpeta).
+- [ ] No queda ningún link a `/success` (ya verificado: ninguno).
 
 **Verificación:**
-- [ ] `npx tsc --noEmit`, `npx next lint`, `next build` (compilación); `npm test` sin regresiones.
-- [ ] Manual/DevTools: el skeleton no “salta” al cargar; relacionados en 2-col mobile como el listado.
+- [ ] `npx tsc --noEmit`, `npx next lint`, `next build` (compilación), `npm test` (28).
+- [ ] `grep -rn "skeletonSchema\|icon-button\|/success"` → cero en código vivo.
 
-**Dependencias:** Task 1 (para que el skeleton matchee la galería final). Independiente de Task 2/3.
-**Archivos:** `app/(routes)/product/[productSlug]/components/skeleton-product.tsx`, `app/(routes)/product/[productSlug]/components/related-products-server.tsx`. — **Scope: S**
+**Dependencias:** Ninguna.
+**Archivos:** (borrados) ver arriba. — **Scope: S**
 
-### Checkpoint B — Detalle completo
-- [ ] Galería con `next/image` + thumbnails (+ zoom), placeholder, skeleton y relacionados consistentes con el design system.
-- [ ] Flujo end-to-end del detalle: ver imágenes (navegar/ampliar) → precios mayorista-first → CTAs de conversión → relacionados.
-- [ ] `npm test` verde, build compila, lint limpio. Validación visual con DevTools registrada.
+### Checkpoint A — Código muerto eliminado
+- [ ] Cero `<img>` nativo en código vivo; cero archivos/rutas muertas; `tsc`/`lint`/`build` verdes; 28 tests pasan.
+
+### Phase 7B — Dependencias y tokens
+
+#### Task 4 — Remover dependencias sin uso (Stripe, `qs`) — S
+
+**Descripción:** Quitar de `package.json` las dependencias sin uso confirmadas y actualizar el lockfile.
+
+**Criterios de aceptación:**
+- [ ] Removidas de `package.json`: `@stripe/react-stripe-js`, `@stripe/stripe-js`, `qs` (y `@types/qs` si existiera).
+- [ ] `package-lock.json` actualizado (`npm install`). `nextjs-toploader` se conserva (en uso).
+
+**Verificación:**
+- [ ] `grep -rn "stripe\|from \"qs\"\|import qs"` en app/components/lib → cero.
+- [ ] `npx tsc --noEmit`, `npx next lint`, `next build` (compilación), `npm test` (28).
+
+**Dependencias:** Tasks 2-3 (que ya quitaron cualquier referencia potencial). Sandbox: `npm install` con red bloqueada → `dangerouslyDisableSandbox`.
+**Archivos:** `package.json`, `package-lock.json`. — **Scope: S**
+
+#### Task 5 — Remover tokens muertos `--chart-*` (cierra OQ Fase 1) — XS
+
+**Descripción:** Eliminar de `app/globals.css` las definiciones `--chart-1..5` y sus mapeos `--color-chart-*` en `@theme inline`, restos del preset shadcn sin uso.
+
+**Criterios de aceptación:**
+- [ ] Borradas las 5 líneas `--chart-N` y las 5 `--color-chart-N` en `@theme inline`.
+- [ ] No hay clases `*-chart-*` en el código (ya verificado).
+
+**Verificación:**
+- [ ] `grep -rn "chart" app/ components/` → cero (salvo, si aplica, palabras no relacionadas).
+- [ ] `npx next lint`, `next build` (compilación), `npm test` (28).
+
+**Dependencias:** Ninguna.
+**Archivos:** `app/globals.css`. — **Scope: XS**
+
+### Checkpoint B — Limpieza completa
+- [ ] Sin código/rutas/archivos muertos, sin deps sin uso, sin tokens muertos; `<img>` solo vía `next/image`.
+- [ ] `npm test` (28) verde, `tsc`/`lint` limpios, `build` compila.
+- [ ] Rediseño cerrado (Fases 1-7). Listo para review/PR.
 
 ---
 
@@ -135,15 +143,13 @@ Orden: primero la imagen principal correcta (next/image + placeholder, ya shippa
 
 | Riesgo | Impacto | Mitigación |
 |---|---|---|
-| Loop de re-render al sincronizar thumbnails con embla | Medio | Suscribir/desuscribir `select` en `useEffect` con cleanup; derivar el índice activo del estado de embla, no de props. |
-| CLS por imágenes de alto variable | Medio | Contenedor de aspecto fijo + `fill object-contain`; `sizes` correcto. |
-| Tentación de agregar radix-dialog / lib de lightbox/zoom | Bajo | Overlay hand-rolled (precedente breadcrumb Fase 4); RNF-5. |
-| `next/image` con dominios de Strapi no configurados | Medio | El proyecto ya usa `next/image` con Strapi en el card (Fases 2/4) → `next.config` ya habilita el host; reutilizar el mismo patrón de `url`. |
-| Scope creep hacia pan/zoom con gestos o fullscreen API | Bajo | Zoom mínimo (overlay + object-contain); gestos quedan fuera. |
+| Borrar algo que sí se usaba | Alto | Inventario por grep ya hecho (importadores reales); `tsc --noEmit` + `build` atrapan cualquier import roto antes de commitear. |
+| `next/image` en la miniatura rompe layout/host | Medio | Reusar patrón ya usado en card/galería; host Strapi ya en `next.config`; validación visual en cart/favoritos. |
+| `qs` usado transitivamente por algo runtime | Bajo | Grep en app/components/lib dio cero; si `build` fallara, se revierte solo el borrado de `qs`. |
+| `npm install` con red bloqueada en sandbox | Medio | Correr con `dangerouslyDisableSandbox` (patrón ya usado en fases previas). |
 
 ## Open Questions
 
-- **Zoom (Task 3) ¿se hace?** RF-26 pide thumbnails **y/o** zoom; con Task 2 ya se cumple. Default: implementarlo simple por valor en limpieza (etiquetas), pero es el candidato a recortar si se prefiere cerrar la fase antes.
-- **Aspect ratio de la imagen principal:** ¿`square` o `4/3`? Default sugerido: `aspect-square` con `object-contain` (consistente con el card). A validar visualmente.
-- **Rename `carousel-product.tsx` → `product-gallery.tsx`:** más descriptivo ahora que tiene thumbnails+zoom. Default: mantener el nombre para minimizar churn (se puede renombrar en Fase 7).
-- **`ProductImageMiniature` (`<img>` en cart/favoritos):** sigue diferido a Fase 7 (limpieza), no entra acá.
+- **Rename `carousel-product.tsx` → `product-gallery.tsx`** (OQ de Fase 6): cosmético; default = no hacerlo para minimizar churn. ¿Incluirlo en esta limpieza?
+- **¿Abrir el PR al cerrar Fase 7?** Las 7 fases viven sin mergear en `redesign/phase-1-design-foundations`; la limpieza es el cierre natural antes del PR.
+- **Verificación visual pendiente de todo el rediseño:** requiere `npm run dev` + `NEXT_PUBLIC_BACKEND_URL` (las gates de build/test no cubren pixeles ni datos reales).

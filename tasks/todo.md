@@ -1,26 +1,30 @@
-# TODO — Fase 6: Detalle de producto (galería)
+# TODO — Fase 7: Limpieza
 
-**Fase 6 COMPLETA** (rama `redesign/phase-1-design-foundations`).
-> Fases 1, 2, 3, 4, 5 ✓ completas — ver git log.
+**Fase 7 PENDIENTE** (rama `redesign/phase-1-design-foundations`).
+> Fases 1, 2, 3, 4, 5, 6 ✓ completas — ver git log.
 
-Plan completo en `tasks/plan.md`. Cubre **RF-26 a RF-28**.
-> RF-27 (jerarquía + CTAs) ya resuelto en Fase 5 (Task 4 `info-product`); RF-28 ya usa el card unificado — Fase 6 = **galería** + pulido skeleton/relacionados.
+Plan completo en `tasks/plan.md`. Cubre **RNF-1** (`<img>`→`next/image`), **RNF-4** (sin código muerto) y **Spec §9** (remover Stripe).
+> Inventario de muerto ya verificado por grep (importadores reales). Sin TDD nuevo: la red es la suite existente (28) + tsc/lint/build + grep.
 
-## Phase 6A — Galería
-- [x] **Task 1** — Imagen principal `next/image` + aspecto fijo + placeholder (helper testeable) (RF-26/RNF-1, edge: sin imágenes) · M — `b6abcd1`
-- [x] **Task 2** — Thumbnails sincronizados con embla (`setApi`) (RF-26) · M — `a0f1e93`
-- [x] **Checkpoint A** — galería navegable y performante (next/image + thumbnails) ✓
+## Phase 7A — Migración del `<img>` y borrado de código muerto
+- [ ] **Task 1** — `ProductImageMiniature` → `next/image` (RNF-1) · S
+- [ ] **Task 2** — Borrar cluster muerto listado/categoría + `api/` legacy + `types/response` (RNF-4) · M
+- [ ] **Task 3** — Borrar sueltos: `skeletonSchema.tsx`, `icon-button.tsx`, ruta `success` (RNF-4/§9) · S
+- [ ] **Checkpoint A** — código muerto eliminado, cero `<img>` nativo
 
-## Phase 6B — Zoom y soporte
-- [x] **Task 3** — Zoom de imagen, overlay hand-rolled sin radix-dialog (RF-26) · M — `04f14ce`
-- [x] **Task 4** — Skeleton + relacionados alineados al design system (RF-25/28/24) · S — pendiente commit
-- [x] **Checkpoint B** — detalle completo y consistente ✓
+## Phase 7B — Dependencias y tokens
+- [ ] **Task 4** — Remover deps sin uso: `@stripe/*`, `qs` (§9) · S
+- [ ] **Task 5** — Remover tokens muertos `--chart-*` (cierra OQ Fase 1, RNF-4) · XS
+- [ ] **Checkpoint B** — limpieza completa, rediseño cerrado
 
 ---
-**Verificación por task:** `npm test` + `npx tsc --noEmit` + `npx next lint` + `next build` (compilación). Visual/runtime con `npm run dev` + backend + **Chrome DevTools** (LCP/CLS, navegación, zoom, consola limpia).
+**Verificación por task:** `npm test` (28) + `npx tsc --noEmit` + `npx next lint` + `next build` (compilación) + grep de importadores. `npm install` (Task 4) con `dangerouslyDisableSandbox`.
 
-**Decisiones clave:** reutilizar el carousel embla existente (cero deps nuevas, RNF-5); `next/image` + contenedor de aspecto (anti-CLS); placeholder de marca vía helper puro (único TDD real de la fase); thumbnails bidireccionales vía `setApi`; zoom hand-rolled (precedente breadcrumb); relacionados al grid 2-col del listado.
+**Inventario de muerto (verificado):**
+- `<img>` vivo restante: solo `product-image-miniature.tsx` (cart + favoritos) → Task 1.
+- Cluster muerto: `choose-category.tsx`, `category/[categorySlug]/components/filters-controls-category.tsx` + `filter-purchase.tsx`, dir `api/` (4 hooks), `types/response.ts` → Task 2.
+- Sueltos: `skeletonSchema.tsx`, `icon-button.tsx`, ruta `success` (asset `/images/success.png` ni existe) → Task 3.
+- Deps sin uso: `@stripe/react-stripe-js`, `@stripe/stripe-js`, `qs` (toploader se conserva; next-themes ya removido) → Task 4.
+- Tokens muertos: `--chart-1..5` + `--color-chart-*` en globals.css → Task 5.
 
-**Fuera de alcance / diferido a Fase 7:** `ProductImageMiniature` (`<img>` en cart/favoritos), `components/icon-button.tsx` (orphan de Fase 5), rename `carousel-product.tsx`→`product-gallery.tsx`.
-
-**Open questions:** ¿hacer el zoom (Task 3) o recortarlo? · aspect ratio `square` vs `4/3` · rename del archivo de galería.
+**Open questions:** rename `carousel-product.tsx`→`product-gallery.tsx` (cosmético, default no); abrir PR al cerrar Fase 7; verificación visual del rediseño completo (necesita `npm run dev` + backend).
