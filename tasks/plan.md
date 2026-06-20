@@ -1,168 +1,181 @@
-# Implementation Plan — Fase 4: Listado / Categoría
+# Implementation Plan — Fase 5: Conversión (WhatsApp + "Mi pedido")
 
-> Deriva de `Spec.md` → sección 11, Fase 4. Cubre **RF-21 a RF-25**: unificar paginación de listado y categoría, breadcrumbs, ordenamiento, filtros, estado en URL, grid mobile compacto y estados de carga/vacío.
+> Deriva de `Spec.md` → sección 11, Fase 5. Cubre **RF-12 a RF-16**: formalizar WhatsApp como canal de compra con mensajes prellenados, convertir el carrito muerto en **"Mi pedido" multi-producto → un único mensaje de WhatsApp**, y dejar favoritos + pedido coherentes y accesibles.
 > **Read-only plan.** La implementación es responsabilidad de `/g-build`.
-> Fases 1 (design system), 2 (product card) y 3 (header/nav) ya completas — ver git log de `redesign/phase-1-design-foundations`.
+> Fases 1 (design system), 2 (product card), 3 (header/nav) y 4 (listado/categoría) ya completas — ver git log de `redesign/phase-1-design-foundations`.
 
 ## Overview
 
-Hoy hay **dos modelos de listado divergentes**: `/products` pagina contra la API (fetch client-side acumulativo) y `/category/[slug]` carga 50 productos y filtra en el cliente (**bug: pierde los productos > 50**). Ninguno tiene breadcrumbs, ordenamiento ni filtros más allá de buscar/categoría, y los estados de carga/vacío son `<p>` planos. Esta fase unifica ambas superficies en **un patrón server-driven con el estado en la URL** (búsqueda, categoría, oferta, orden, página): el server lee `searchParams`, hace **un solo `getProducts`** con los filtros, y un listado compartido renderiza grid + breadcrumbs + orden + filtros + paginación + skeletons + estado vacío. Esto resuelve el bug de categoría, hace las vistas compartibles por URL (RF-23) y deja una sola implementación.
+La conversión real ocurre por **WhatsApp**, pero hoy ese camino está a medio cablear y con deuda:
+
+- `lib/whatsapp.ts` ya centraliza el mensaje **por producto** (`buildWhatsappUrl`) y el general (`buildGeneralWhatsappUrl`), y la **product card** ya usa el primero (Fase 2). Falta el mensaje **multi-ítem** para el pedido completo.
+- La página `/cart` es un **checkout muerto**: título "Carrito de compras", suma `price` (menudeo) como "Total de la orden" y un botón **"Comprar" → `console.log`**. No envía nada por WhatsApp.
+- `loved-products/page.tsx` e `info-product.tsx` **arman la URL de WhatsApp a mano** (`phoneNumber` hardcodeado, `bg-green-600` fuera del token `--whatsapp`, `Array.map` sin formato → `productName,productName`). `info-product` además tiene el botón "Comprar" muerto comentado y NO ofrece "Agregar a mi pedido".
+- La **product card** no tiene CTA "Agregar a mi pedido" (solo "Pedir" directo + favorito); el store `useCart` existe y el navbar ya cuenta sus ítems, pero nada lo llena salvo código muerto comentado.
+- El navbar arma su propio `openWhatsapp` hardcodeado en vez de usar el helper.
+
+Esta fase **formaliza el embudo**: un único helper de mensaje multi-ítem (puro, testeado), `/cart` rediseñada como **"Mi pedido"** que envía todos los ítems por WhatsApp, CTA "Agregar a mi pedido" en card y detalle, favoritos coherente con el design system y enviable por WhatsApp, y limpieza del WhatsApp hardcodeado restante. Sin tocar Strapi ni Stripe (queda fuera de alcance, Spec §9).
 
 ## Architecture Decisions
 
-- **Fuente única de datos:** ambas superficies usan `getProducts` (ya soporta `categoryId`, `search`, `isRebaja`, paginación). `/category` resuelve `getCategoryBySlug(slug) → category.id` y delega en `getProducts`. `getCategoryProducts` queda deprecado/eliminado. Resuelve el bug de >50.
-- **Estado en la URL con nuqs** (paquete recomendado en el Spec §10): `?search`, `?category`, `?offer`, `?sort`, `?page`. El **server** lee `searchParams` (async) y rinde el resultado; los **controles client** usan nuqs (`useQueryState`) para actualizar la URL (con `shallow: false` para re-fetch del server). Rationale: nuqs es exactamente la herramienta para "URL como fuente de verdad" multi-parámetro; evita el doble modelo de estado actual.
-- **Paginación por página (`?page=N`), server-driven:** reemplaza el "cargar más" acumulativo por controles prev/siguiente + "página X de Y". Es compartible, fixea el bug y unifica. (Open Question: mantener "cargar más" vs paginado; default = paginado.)
-- **Orden seguro vía allow-list:** `lib/sort.ts` mapea claves públicas (`novedades`, `precio_asc`, `precio_desc`, `nombre`) a strings de Strapi; función pura **testeada** (evita inyección de `sort` arbitrario en la query).
-- **Componentes de listado reutilizables** en `components/listing/` (sort, paginación, skeleton, estado vacío) + `components/ui/breadcrumb.tsx` (hand-authored estilo shadcn, sin CLI). Consumidos por ambas superficies → una sola implementación de UI de listado.
-- **Grid mobile 2 columnas compacto (RF-24):** ya se cumple (grid 2-col mobile + card compacta de Fase 2); el listado compartido conserva `grid-cols-2 ... xl:grid-cols-5`.
-- **Tokens del design system y sin `dark:`** en todo lo nuevo; inputs/controles usan los componentes base (Input, Button, dropdown-menu).
-- **Verificación:** `npm test` (suite node:test, incluye `lib/sort`) + `npx tsc --noEmit` + `npx next lint` + `next build` (compilación) + visual con `npm run dev` + backend Strapi.
+- **Un solo constructor de mensajes en `lib/whatsapp.ts`:** agregar `buildOrderWhatsappUrl(items, { baseUrl?, intro? })` — función **pura y testeada** (node:test, igual que Fase 2/4) que arma **un único** `wa.me` con todos los ítems en formato legible (nombre · precio mayoreo-first · link). Favoritos y "Mi pedido" la reusan con distinto `intro` → cero duplicación, cero teléfonos hardcodeados. Centraliza el formato exigido por el edge case "muchos ítems / límite de URL" (Spec §8).
+- **"Mi pedido" = el store de carrito reusado, SIN cantidades:** `useCart` ya es una lista dedup de `ProductType` (1 por producto) con `persist`. RF-14 dice "cantidad **si aplica**"; agregar cantidades implica cambiar el shape del store + steppers en UI = scope mayor y riesgo de regresión en el contador del navbar. **Decisión:** mantener el modelo 1-por-producto en esta fase (sin deuda: el helper acepta `quantity?` opcional para no cerrar la puerta). Cantidades quedan como Open Question.
+- **Ruta interna `/cart` se mantiene; el copy es "Mi pedido":** renombrar la ruta obligaría redirects y tocar navbar/footer/links por un beneficio cosmético. Se conserva `app/(routes)/cart` y se cambia solo el texto visible y la semántica (envío WhatsApp en vez de checkout). El navbar ya rotula el ícono "Mi pedido".
+- **Verde solo WhatsApp, vía token (RN-2):** todos los CTAs de envío pasan a `bg-whatsapp text-whatsapp-foreground` (se elimina el `bg-green-600` hardcodeado de `loved-products` e `info-product`).
+- **Mayorista-first en todo el embudo (RN-1):** `cart-item`, la página de pedido y `info-product` muestran el **mayoreo protagonista** y el menudeo secundario, vía `formatPrice` (que ya devuelve `null` → "Consultar"). Se elimina el "Total de la orden" (no aplica a un pedido-consulta por WhatsApp; los precios mayoreo/menudeo conviven y el cierre es por chat).
+- **Estados vacíos con el componente compartido:** se reusa `components/listing/empty-state.tsx` (Fase 4) para "Mi pedido vacío" y "Sin favoritos" con CTA a explorar (Spec §8).
+- **`next/image` en miniaturas queda para Fase 7:** `ProductImageMiniature` usa `<img>`; está listado explícitamente en la limpieza de Fase 7. No se toca aquí para no mezclar concerns (disciplina de scope).
+- **Verificación:** `npm test` (suite node:test, suma casos de `buildOrderWhatsappUrl`) + `npx tsc --noEmit` + `npx next lint` + `next build` (compilación) + visual con `npm run dev` + backend Strapi.
 
 ## Grafo de dependencias
 
 ```
-Task 1 (data: sort + fetch unificado)      Task 2 (nuqs setup)
-            \                                   /
-             \                                 /
-              ▼                               ▼
-        Task 3 (controles: sort + paginación)        Task 4 (estados + breadcrumb)
-                          \                          /
-                           \                        /
-                            ▼                      ▼
-                    Task 5 (migrar /products)  ──► patrón ──►  Task 6 (migrar /category)
+Task 1 (helper buildOrderWhatsappUrl + tests)   ← foundation, pura/testeable
+        │
+        ├──────────────► Task 2 (/cart → "Mi pedido" + envío WhatsApp)
+        │                         │
+Task 3 (CTA "Agregar a mi pedido" en product card) ─┘  (llena el pedido)
+        │
+        ├──────────────► Task 4 (detalle: CTAs WhatsApp + agregar + favorito toggle)
+        │
+        └──────────────► Task 5 (favoritos rediseñada + WhatsApp + mover a pedido)
+
+Task 6 (navbar: WhatsApp por helper + coherencia copy) ← independiente, cierre
 ```
 
-Tasks 1, 2 y 4 son independientes. Task 3 depende de 1 (opciones de orden) y 2 (nuqs). Tasks 5 y 6 dependen de 1-4; 6 reusa el patrón validado en 5.
+Orden: helper primero (todo lo demás lo consume), luego destino del pedido (`/cart`), luego los orígenes que lo llenan (card, detalle), favoritos, y limpieza final del navbar.
+
+---
 
 ## Task List
 
-### Phase 4A — Fundaciones
+### Phase 5A — Fundación de conversión
 
-#### Task 1: Capa de datos — orden y fetch unificado (RF-21, RF-22)
-**Descripción:** Permitir ordenar en `getProducts` mediante una allow-list segura y dejar lista la base para que categoría use `getProducts`.
+#### Task 1 — Helper de mensaje multi-ítem (`buildOrderWhatsappUrl`) — S
+
+**Descripción:** Agregar a `lib/whatsapp.ts` una función pura que arme **un único** enlace `wa.me` a partir de una lista de productos, en formato legible y mayorista-first, reusable por "Mi pedido" y favoritos.
 
 **Criterios de aceptación:**
-- [ ] Nuevo `lib/sort.ts`: tipo `SortKey`, lista de opciones `{ key, label }` para la UI, y `toStrapiSort(key)` que mapea a string de Strapi (`novedades`→`createdAt:desc`, `precio_asc`→`price_mayoreo:asc`, `precio_desc`→`price_mayoreo:desc`, `nombre`→`productName:asc`), con fallback seguro a `novedades` para claves desconocidas.
-- [ ] `lib/sort.test.ts`: tests del mapeo y del fallback (node:test).
-- [ ] `getProducts` acepta `sort?: SortKey` y aplica `toStrapiSort`; sin `sort` mantiene `novedades`.
-- [ ] `getProducts` ya soporta `categoryId`/`search`/`isRebaja` (verificado) → no se requiere endpoint nuevo para categoría.
+- [ ] `buildOrderWhatsappUrl(items, options?)` donde `items: { productName: string; slug: string; price_mayoreo?: number|null; price?: number|null; quantity?: number }[]` y `options?: { baseUrl?: string; intro?: string }`.
+- [ ] Devuelve `https://wa.me/${WHATSAPP_PHONE}?text=...` con `intro` (default tipo "Hola, quiero hacer este pedido:") seguido de una línea por ítem: nombre + precio (mayoreo si existe, si no menudeo, vía `formatPrice`) + link al producto si hay `baseUrl`.
+- [ ] Si `items` está vacío, devuelve una URL válida con un mensaje genérico (no rompe).
+- [ ] Todo el texto va `encodeURIComponent`. Sin teléfonos hardcodeados (usa `WHATSAPP_PHONE`).
 
 **Verificación:**
-- [ ] `npm test` (incluye `lib/sort`) + `npx tsc --noEmit` limpios.
-- [ ] Manual: `getProducts({ sort: 'precio_asc' })` genera `sort[0]=price_mayoreo:asc`.
+- [ ] `npm test` — nuevos casos en `lib/whatsapp.test.ts`: apunta al teléfono; incluye los nombres de **todos** los ítems; usa mayoreo cuando existe y cae a menudeo cuando no; incluye links con `baseUrl`; lista vacía → URL válida; `intro` personalizado se codifica.
+- [ ] `npx tsc --noEmit`, `npx next lint`.
 
 **Dependencias:** Ninguna.
-**Archivos probablemente tocados:** `lib/sort.ts` (nuevo), `lib/sort.test.ts` (nuevo), `lib/data/strapi.ts`.
-**Scope estimado:** Small.
+**Archivos:** `lib/whatsapp.ts`, `lib/whatsapp.test.ts`. — **Scope: S**
 
-#### Task 2: Estado en URL — nuqs (RF-23)
-**Descripción:** Adoptar nuqs como gestor de estado en la URL para los controles de listado.
+#### Task 2 — `/cart` → "Mi pedido" con envío por WhatsApp — M
 
-**Criterios de aceptación:**
-- [ ] `nuqs` instalado (dependencia).
-- [ ] `NuqsAdapter` (adapter de Next App Router) envuelve la app en `app/layout.tsx`.
-- [ ] No rompe el `?search=` introducido en Fase 3 (sigue navegando a `/products?search=`).
-
-**Verificación:**
-- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
-- [ ] Manual: un control de prueba con `useQueryState` actualiza la URL y dispara re-render del server.
-
-**Dependencias:** Ninguna.
-**Archivos probablemente tocados:** `package.json`, `app/layout.tsx`.
-**Scope estimado:** Small.
-
-#### Task 3: Controles de listado — orden y paginación (RF-22, RF-23)
-**Descripción:** Componentes client que reflejan/actualizan el estado en la URL para ordenar y paginar.
+**Descripción:** Rediseñar la página del carrito como **"Mi pedido"**: lista de ítems con design system, estado vacío con CTA, y botón "Enviar pedido por WhatsApp" que usa `buildOrderWhatsappUrl`. Eliminar el checkout muerto ("Total de la orden" + "Comprar" → `console.log`).
 
 **Criterios de aceptación:**
-- [ ] `components/listing/sort-select.tsx`: dropdown (usa `dropdown-menu` o `Input`/`select` estilizado) con las opciones de `lib/sort`, sincronizado a `?sort` vía nuqs (`shallow: false`).
-- [ ] `components/listing/pagination-controls.tsx`: prev/siguiente + "Página X de Y", sincronizado a `?page` vía nuqs; deshabilita extremos correctamente.
-- [ ] Accesibles (labels/aria), tokens, sin `dark:`.
+- [ ] Título y copy "Mi pedido"; precios mayorista-first en `cart-item` (mayoreo protagonista, menudeo secundario, `formatPrice`).
+- [ ] Pedido vacío → `EmptyState` con CTA a `/products`. Se elimina el bloque "Resumen de la compra"/"Comprar"/`console.log` y la suma de menudeo como total.
+- [ ] Botón "Enviar pedido por WhatsApp" (`bg-whatsapp`) que abre `buildOrderWhatsappUrl(items, { baseUrl, intro })`; deshabilitado/oculto si el pedido está vacío. Opción "Vaciar pedido" (`removeAll`).
+- [ ] `cart-item` con botón de eliminar accesible (`<button aria-label>`, no `onClick` en el ícono `X`).
+- [ ] Guard de hydration para leer el store persistido (patrón ya usado en navbar/card).
 
 **Verificación:**
-- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
-- [ ] Manual: cambiar orden/página actualiza la URL y la grilla.
+- [ ] `npm test` (sin regresiones), `npx tsc --noEmit`, `npx next lint`, `next build` (compilación).
+- [ ] Manual: agregar ítems → `/cart` los lista → "Enviar" abre WhatsApp con todos; vaciar y pedido-vacío muestran estado correcto.
 
-**Dependencias:** Task 1, Task 2.
-**Archivos probablemente tocados:** `components/listing/sort-select.tsx` (nuevo), `components/listing/pagination-controls.tsx` (nuevo).
-**Scope estimado:** Medium.
+**Dependencias:** Task 1.
+**Archivos:** `app/(routes)/cart/page.tsx`, `app/(routes)/cart/components/cart-item.tsx`. — **Scope: M**
 
-#### Task 4: Estados y breadcrumbs (RF-25, RF-22)
-**Descripción:** Componentes de carga, vacío y migas de pan reutilizables.
+### Checkpoint A — Pedido enviable
+- [ ] `npm test` verde, build compila.
+- [ ] El usuario puede ver "Mi pedido" y enviarlo por WhatsApp como un solo mensaje.
+
+### Phase 5B — Orígenes del pedido y coherencia
+
+#### Task 3 — CTA "Agregar a mi pedido" en product card — S
+
+**Descripción:** Sumar a la product card el botón "Agregar a mi pedido" (`useCart.addItem`), conservando "Pedir por WhatsApp" directo y el favorito. Mantener la card compacta en mobile (2-col).
 
 **Criterios de aceptación:**
-- [ ] `components/ui/breadcrumb.tsx`: breadcrumb estilo shadcn (hand-authored), con separador (chevron lucide) y tokens.
-- [ ] `components/listing/product-grid-skeleton.tsx`: grilla de skeletons que matchea el layout del grid (2→5 cols), parametrizable por cantidad.
-- [ ] `components/listing/empty-state.tsx`: estado vacío con mensaje + CTA (p. ej. limpiar filtros / ver todos), tokens.
-- [ ] Sin `dark:`.
+- [ ] Botón "Agregar a mi pedido" (ícono carrito) que llama `addItem(product)`; el toast y la dedup ya los provee el store; el contador del navbar refleja el alta.
+- [ ] Layout compacto coherente con Fase 2/4 (no rompe el grid de 2 columnas mobile); sin `dark:`, usando Button/tokens.
+- [ ] Sin hydration mismatch (la card ya monta-guard para favoritos).
 
 **Verificación:**
-- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
-- [ ] Manual: render aislado de skeleton/empty/breadcrumb se ve consistente con el sistema.
+- [ ] `npx tsc --noEmit`, `npx next lint`, `next build` (compilación); `npm test` sin regresiones.
+- [ ] Manual: click agrega al pedido y el contador del navbar sube; reagregar muestra el toast de "ya está".
 
-**Dependencias:** Ninguna.
-**Archivos probablemente tocados:** `components/ui/breadcrumb.tsx` (nuevo), `components/listing/product-grid-skeleton.tsx` (nuevo), `components/listing/empty-state.tsx` (nuevo).
-**Scope estimado:** Medium.
+**Dependencias:** Task 2 (destino del pedido listo).
+**Archivos:** `components/shared/product-card.tsx`. — **Scope: S**
 
-### Checkpoint A — Fundaciones y primitivos
-- [ ] `npm test` + `tsc` + `lint` + compilación limpios.
-- [ ] Controles, estados y breadcrumb existen y compilan.
-- [ ] Review humano antes de migrar superficies.
+#### Task 4 — Detalle de producto: CTAs de conversión formalizados — M
 
-### Phase 4B — Migración de superficies
-
-#### Task 5: Migrar `/products` al listado server-driven (RF-21, 22, 23, 24, 25)
-**Descripción:** Reescribir `/products` para que el server lea los `searchParams` (page, search, sort, category, offer), haga `getProducts` con esos filtros y renderice el listado unificado con breadcrumbs, orden, filtros, paginación y estados.
+**Descripción:** En `info-product.tsx`, reemplazar el WhatsApp hardcodeado por `buildWhatsappUrl`, agregar "Agregar a mi pedido" (`addItem`), convertir el favorito en **toggle** (add/remove con estado), y aplicar jerarquía de precios mayorista-first. (La galería/zoom RF-26 es Fase 6; aquí solo el bloque de conversión y precios.)
 
 **Criterios de aceptación:**
-- [ ] `app/(routes)/products/page.tsx` lee `searchParams` (page/search/sort/category/offer), hace `getProducts(...)` server-side y pasa data + meta al render.
-- [ ] Breadcrumb "Inicio › Productos"; controles de orden, filtro por categoría y toggle "Solo ofertas"; paginación por página; skeleton/empty integrados.
-- [ ] Se reemplaza el modelo de fetch client-side acumulativo de `products-client-wrapper.tsx` (los controles pasan a nuqs; el wrapper se simplifica o elimina); `products-filter.tsx` usa los controles/URL.
-- [ ] Grid 2-col mobile → 5 xl conservado (RF-24).
+- [ ] CTA WhatsApp usa `buildWhatsappUrl(product, baseUrl)` con `bg-whatsapp` (sin `green-600` ni teléfono hardcodeado).
+- [ ] Botón "Agregar a mi pedido" (`addItem`) visible; se elimina el bloque "Comprar" comentado muerto.
+- [ ] Favorito = toggle con estado montado (add/remove, `aria-pressed`, corazón relleno), consistente con la card.
+- [ ] Precios mayorista-first (mayoreo protagonista, menudeo secundario, `formatPrice` con "Consultar" si falta).
 
 **Verificación:**
-- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
-- [ ] Manual: en `/products`, buscar/filtrar/ordenar/paginar actualiza la URL y los resultados; recargar la URL reproduce el mismo estado; estados de carga/vacío correctos.
+- [ ] `npx tsc --noEmit`, `npx next lint`, `next build` (compilación); `npm test` sin regresiones.
+- [ ] Manual: en detalle, WhatsApp prellena el producto; "Agregar a mi pedido" sube el contador; el corazón togglea.
 
-**Dependencias:** Tasks 1-4.
-**Archivos probablemente tocados:** `app/(routes)/products/page.tsx`, `app/(routes)/products/components/products-client-wrapper.tsx`, `app/(routes)/products/components/products-filter.tsx`.
-**Scope estimado:** Medium/Large.
+**Dependencias:** Task 1, Task 3 (patrón de "agregar").
+**Archivos:** `app/(routes)/product/[productSlug]/components/info-product.tsx`. — **Scope: M**
 
-#### Task 6: Migrar `/category/[slug]` al listado unificado (RF-21 fix, 22, 23, 25)
-**Descripción:** Migrar categoría al mismo patrón server-driven, resolviendo el bug de >50 productos y agregando breadcrumbs/orden/paginación.
+#### Task 5 — Favoritos rediseñada + WhatsApp + mover a pedido — M
+
+**Descripción:** Rediseñar `loved-products/page.tsx` con el design system: estado vacío con CTA, consulta por WhatsApp vía `buildOrderWhatsappUrl` (intro de favoritos), y por ítem "Agregar a mi pedido" además de quitar. Limpiar el WhatsApp hardcodeado y `bg-green-600`.
 
 **Criterios de aceptación:**
-- [ ] `app/(routes)/category/[categorySlug]/page.tsx` resuelve `getCategoryBySlug` y usa `getProducts({ categoryId, page, search, sort })` server-side (sin tope de 50; pagina todo).
-- [ ] Breadcrumb "Inicio › Categoría"; orden, búsqueda y paginación reutilizando los controles compartidos; skeleton/empty.
-- [ ] Se elimina el filtrado client-side con tope (`category-client-wrapper.tsx`, `search.tsx`) reemplazándolo por el listado unificado; `getCategoryProducts` se deprecia/elimina si queda sin uso.
+- [ ] Sin favoritos → `EmptyState` con CTA a `/products`. Copy y estilos con tokens (no `green-600`, no map crudo).
+- [ ] Botón "Consultar por WhatsApp" usa `buildOrderWhatsappUrl(lovedItems, { baseUrl, intro: "..." })`.
+- [ ] Cada `loved-item-product` permite "Agregar a mi pedido" (`addItem`) y "Quitar" (`removeLovedItem`) con botones accesibles; precios mayorista-first.
+- [ ] Guard de hydration para el store persistido.
 
 **Verificación:**
-- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
-- [ ] Manual: una categoría con >50 productos muestra todos vía paginación; orden/búsqueda/URL funcionan; breadcrumbs correctos.
+- [ ] `npx tsc --noEmit`, `npx next lint`, `next build` (compilación); `npm test` sin regresiones.
+- [ ] Manual: favoritos lista, "Consultar" abre WhatsApp con todos, "Agregar a mi pedido" mueve al pedido, vacío muestra estado.
 
-**Dependencias:** Tasks 1-4 (y patrón de Task 5).
-**Archivos probablemente tocados:** `app/(routes)/category/[categorySlug]/page.tsx`, `category-client-wrapper.tsx`, `category/[categorySlug]/components/search.tsx`, `lib/data/strapi.ts` (deprecar `getCategoryProducts`).
-**Scope estimado:** Medium.
+**Dependencias:** Task 1, Task 3.
+**Archivos:** `app/(routes)/loved-products/page.tsx`, `app/(routes)/loved-products/components/loved-item-product.tsx`. — **Scope: M**
 
-### Checkpoint B — Fase 4 completa
-- [ ] Listado y categoría comparten un patrón server-driven con estado en URL; el bug de >50 está resuelto.
-- [ ] Breadcrumbs, orden, filtros, paginación y estados de carga/vacío presentes en ambas.
-- [ ] `npm test` + `tsc` + `lint` + compilación limpios; recorrido manual sin regresiones.
-- [ ] Listo para Fase 5 (conversión: WhatsApp + "Mi pedido" multi-producto).
+#### Task 6 — Navbar: WhatsApp por helper + coherencia de copy — XS
 
-## Risks and Mitigations
+**Descripción:** Reemplazar el `openWhatsapp` hardcodeado del navbar por `buildGeneralWhatsappUrl` (como el FAB) y verificar coherencia del acceso "Mi pedido"/favoritos con contador (RF-19).
 
-| Risk | Impact | Mitigation |
+**Criterios de aceptación:**
+- [ ] El botón de WhatsApp del navbar usa `buildGeneralWhatsappUrl` (sin teléfono/mensaje hardcodeados).
+- [ ] Accesos a favoritos y "Mi pedido" con contador siguen funcionando (sin regresión del guard de hydration).
+
+**Verificación:**
+- [ ] `npx tsc --noEmit`, `npx next lint`, `next build` (compilación); `npm test` sin regresiones.
+- [ ] Manual: el ícono de WhatsApp del header abre el mismo destino que el FAB.
+
+**Dependencias:** Ninguna (puede ir al final).
+**Archivos:** `components/navbar.tsx`. — **Scope: XS**
+
+### Checkpoint B — Embudo de conversión completo
+- [ ] Todos los CTAs (card, detalle, favoritos, pedido, navbar, FAB) usan los helpers centralizados; cero WhatsApp hardcodeado.
+- [ ] Flujo end-to-end: descubrir → agregar a pedido → enviar pedido por WhatsApp; y descubrir → favorito → consultar/mover a pedido.
+- [ ] `npm test` verde, build compila, lint limpio.
+
+---
+
+## Riesgos y mitigaciones
+
+| Riesgo | Impacto | Mitigación |
 |---|---|---|
-| nuqs requiere red para instalar | Bajo | `npm install` con red habilitada (ya usado en fases previas). |
-| Cambiar "cargar más" por paginado altera la UX esperada | Medio | Decisión explícita (default paginado, compartible); Open Question para confirmar. |
-| `sort` arbitrario en la query (inyección) | Medio | Allow-list en `lib/sort.ts` con fallback; nunca pasar el valor crudo a Strapi. |
-| `searchParams` dinámicos desactivan ISR del listado | Bajo | Es el comportamiento esperado (vistas dinámicas por filtro); home/detalle conservan ISR. |
-| Migración rompe el `?search=` de Fase 3 | Medio | Mantener el mismo nombre de parámetro `search`; verificar el flujo del header. |
-| `next build` no completa sin `NEXT_PUBLIC_BACKEND_URL` | Bajo | Gate real = `npm test` + `tsc` + `lint` + compilación; visual en dev. |
+| URL de WhatsApp demasiado larga con muchos ítems | Medio | Formato compacto (una línea por ítem); `buildOrderWhatsappUrl` testeado; evaluar truncado/aviso si crece (Open Question). |
+| Hydration mismatch al leer `useCart`/`useLovedProducts` persistidos | Medio | Reusar el patrón `mounted` ya probado en navbar/card en todas las páginas client nuevas. |
+| Scope creep hacia cantidades o checkout | Medio | Decisión explícita: sin cantidades, sin Stripe (Spec §9); helper deja `quantity?` abierto sin implementarlo. |
+| Mezclar la galería del detalle (Fase 6) | Bajo | Task 4 toca solo el bloque de conversión/precios de `info-product`, no la galería. |
 
 ## Open Questions
-- **Paginación:** ¿paginado por página (default, compartible) o mantener "Cargar más" (infinite-ish)? El plan asume **paginado**.
-- **Filtros en `/products`:** ¿alcanza con categoría + "solo ofertas", o también rango de precio? (No hay precio mínimo/máximo indexado; el rango requeriría más trabajo). Default: categoría + ofertas.
-- **Búsqueda en categoría:** ¿mantenemos un buscador dentro de la categoría, o la búsqueda global del header (que va a `/products`) es suficiente? Default: mantener búsqueda dentro de la categoría (filtra dentro del rubro).
+
+- **Cantidades en "Mi pedido"** (RF-14 "si aplica"): ¿se necesitan steppers de cantidad o alcanza 1-por-producto? Default actual: 1-por-producto.
+- **Límite de URL de WhatsApp**: si un pedido es enorme, ¿truncar con "...y N ítems más" o avisar? Default: enviar completo.
+- **Ruta `/cart`**: ¿renombrar a `/mi-pedido` por SEO/claridad o mantener? Default: mantener (solo cambia el copy).
+- **`next/image` en miniaturas**: se difiere a Fase 7 (limpieza) junto con el resto de `<img>`.
