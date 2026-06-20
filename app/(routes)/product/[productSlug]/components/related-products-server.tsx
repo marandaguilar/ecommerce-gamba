@@ -12,11 +12,11 @@ export default function RelatedProductsServer({ products }: RelatedProductsServe
 
   return (
     <div className="max-w-[1600px] py-10 mx-auto sm:px-8 px-4">
-      <h3 className="text-3xl font-medium px-6 py-2">
+      <h3 className="mb-6 font-display text-2xl font-bold sm:text-3xl">
         Podría interesarte
       </h3>
 
-      <div className="grid gap-4 mt-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {products.map((product: ProductType) => (
           <ProductCard key={product.id} product={product} />
         ))}

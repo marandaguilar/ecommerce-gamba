@@ -1,20 +1,20 @@
 # TODO — Fase 6: Detalle de producto (galería)
 
-**Fase 6 PENDIENTE** (rama `redesign/phase-1-design-foundations`).
+**Fase 6 COMPLETA** (rama `redesign/phase-1-design-foundations`).
 > Fases 1, 2, 3, 4, 5 ✓ completas — ver git log.
 
 Plan completo en `tasks/plan.md`. Cubre **RF-26 a RF-28**.
 > RF-27 (jerarquía + CTAs) ya resuelto en Fase 5 (Task 4 `info-product`); RF-28 ya usa el card unificado — Fase 6 = **galería** + pulido skeleton/relacionados.
 
 ## Phase 6A — Galería
-- [ ] **Task 1** — Imagen principal `next/image` + aspecto fijo + placeholder (helper testeable) (RF-26/RNF-1, edge: sin imágenes) · M
-- [ ] **Task 2** — Thumbnails sincronizados con embla (`setApi`) (RF-26) · M
-- [ ] **Checkpoint A** — galería navegable y performante (next/image + thumbnails)
+- [x] **Task 1** — Imagen principal `next/image` + aspecto fijo + placeholder (helper testeable) (RF-26/RNF-1, edge: sin imágenes) · M — `b6abcd1`
+- [x] **Task 2** — Thumbnails sincronizados con embla (`setApi`) (RF-26) · M — `a0f1e93`
+- [x] **Checkpoint A** — galería navegable y performante (next/image + thumbnails) ✓
 
 ## Phase 6B — Zoom y soporte
-- [ ] **Task 3** — Zoom de imagen, overlay hand-rolled sin radix-dialog (RF-26, opcional) · M
-- [ ] **Task 4** — Skeleton + relacionados alineados al design system (RF-25/28/24) · S
-- [ ] **Checkpoint B** — detalle completo y consistente
+- [x] **Task 3** — Zoom de imagen, overlay hand-rolled sin radix-dialog (RF-26) · M — `04f14ce`
+- [x] **Task 4** — Skeleton + relacionados alineados al design system (RF-25/28/24) · S — pendiente commit
+- [x] **Checkpoint B** — detalle completo y consistente ✓
 
 ---
 **Verificación por task:** `npm test` + `npx tsc --noEmit` + `npx next lint` + `next build` (compilación). Visual/runtime con `npm run dev` + backend + **Chrome DevTools** (LCP/CLS, navegación, zoom, consola limpia).
