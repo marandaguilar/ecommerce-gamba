@@ -1,21 +1,21 @@
 # TODO — Fase 7: Limpieza
 
-**Fase 7 PENDIENTE** (rama `redesign/phase-1-design-foundations`).
-> Fases 1, 2, 3, 4, 5, 6 ✓ completas — ver git log.
+**Fase 7 COMPLETA** (rama `redesign/phase-1-design-foundations`).
+> Fases 1, 2, 3, 4, 5, 6 ✓ completas — ver git log. **Rediseño cerrado (Fases 1-7).**
 
 Plan completo en `tasks/plan.md`. Cubre **RNF-1** (`<img>`→`next/image`), **RNF-4** (sin código muerto) y **Spec §9** (remover Stripe).
 > Inventario de muerto ya verificado por grep (importadores reales). Sin TDD nuevo: la red es la suite existente (28) + tsc/lint/build + grep.
 
 ## Phase 7A — Migración del `<img>` y borrado de código muerto
-- [ ] **Task 1** — `ProductImageMiniature` → `next/image` (RNF-1) · S
-- [ ] **Task 2** — Borrar cluster muerto listado/categoría + `api/` legacy + `types/response` (RNF-4) · M
-- [ ] **Task 3** — Borrar sueltos: `skeletonSchema.tsx`, `icon-button.tsx`, ruta `success` (RNF-4/§9) · S
-- [ ] **Checkpoint A** — código muerto eliminado, cero `<img>` nativo
+- [x] **Task 1** — `ProductImageMiniature` → `next/image` (RNF-1) · S — `ade9500`
+- [x] **Task 2** — Borrar cluster muerto listado/categoría + `api/` legacy + `types/response` (RNF-4) · M — `0877962`
+- [x] **Task 3** — Borrar sueltos: `skeletonSchema.tsx`, `icon-button.tsx`, ruta `success` (RNF-4/§9) · S — `b3ca720`
+- [x] **Checkpoint A** — código muerto eliminado, cero `<img>` nativo ✓
 
 ## Phase 7B — Dependencias y tokens
-- [ ] **Task 4** — Remover deps sin uso: `@stripe/*`, `qs` (§9) · S
-- [ ] **Task 5** — Remover tokens muertos `--chart-*` (cierra OQ Fase 1, RNF-4) · XS
-- [ ] **Checkpoint B** — limpieza completa, rediseño cerrado
+- [x] **Task 4** — Remover deps sin uso: `@stripe/*`, `qs` (§9) · S — `19a5183`
+- [x] **Task 5** — Remover tokens muertos `--chart-*` (cierra OQ Fase 1, RNF-4) · XS — pendiente commit
+- [x] **Checkpoint B** — limpieza completa, rediseño cerrado ✓
 
 ---
 **Verificación por task:** `npm test` (28) + `npx tsc --noEmit` + `npx next lint` + `next build` (compilación) + grep de importadores. `npm install` (Task 4) con `dangerouslyDisableSandbox`.
