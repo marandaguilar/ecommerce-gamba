@@ -5,6 +5,7 @@ import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { Toaster } from "sonner";
 import NextTopLoader from "nextjs-toploader";
+import { getAllCategories } from "@/lib/data/strapi";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -23,11 +24,13 @@ export const metadata: Metadata = {
   description: "Catálogo de productos de Gamba",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const categories = await getAllCategories();
+
   return (
     <html lang="es">
       <body
@@ -48,7 +51,7 @@ export default function RootLayout({
           zIndex={1600}
           showAtBottom={false}
         />
-        <Navbar />
+        <Navbar categories={categories} />
         {children}
         <Toaster />
         <Footer />

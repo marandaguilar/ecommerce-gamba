@@ -6,8 +6,13 @@ import { Heart, MessageCircle } from "lucide-react";
 import MenuList from "./menu-list";
 import ItemsMenuMobile from "./items-menu-mobile";
 import { useLovedProducts } from "@/hooks/use-loved-products";
+import { CategoryType } from "@/types/category";
 
-const Navbar = () => {
+interface NavbarProps {
+  categories: CategoryType[];
+}
+
+const Navbar = ({ categories }: NavbarProps) => {
   const router = useRouter();
   const { lovedItems } = useLovedProducts();
 
@@ -26,10 +31,10 @@ const Navbar = () => {
           </p>
         </div>
         <div className="items-center justify-center hidden sm:flex">
-          <MenuList />
+          <MenuList categories={categories} />
         </div>
         <div className="flex sm:hidden">
-          <ItemsMenuMobile />
+          <ItemsMenuMobile categories={categories} />
         </div>
         <div className="flex items-center justify-center gap-4 sm:gap-5">
           <MessageCircle
