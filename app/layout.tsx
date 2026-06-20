@@ -1,14 +1,21 @@
 import type { Metadata } from "next";
-import { Urbanist } from "next/font/google";
+import { Plus_Jakarta_Sans, Sora } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { Toaster } from "sonner";
 import NextTopLoader from "nextjs-toploader";
 
-const urbanist = Urbanist({
-  variable: "--font-urbanist",
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const sora = Sora({
+  variable: "--font-sora",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -22,8 +29,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${urbanist.variable} antialiased pt-16`}>
+    <html lang="es">
+      <body
+        className={`${jakarta.variable} ${sora.variable} font-sans antialiased pt-16`}
+      >
         <NextTopLoader
           color="#2299DD"
           initialPosition={0.08}
