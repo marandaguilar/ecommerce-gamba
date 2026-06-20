@@ -1,44 +1,74 @@
 "use client";
-import { useLovedProducts } from "@/hooks/use-loved-products";
-import LovedItemProduct from "./components/loved-item-product";
-import { Button } from "@/components/ui/button";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { MessageCircle } from "lucide-react";
+
+import { useLovedProducts } from "@/hooks/use-loved-products";
+import { buildOrderWhatsappUrl } from "@/lib/whatsapp";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import EmptyState from "@/components/listing/empty-state";
+import LovedItemProduct from "./components/loved-item-product";
 
 export default function LovedProductsPage() {
   const { lovedItems } = useLovedProducts();
 
-  return (
-    <div className="max-w-4xl py-4 mx-auto sm:py-32 sm:px-24">
-      <h1 className="sm:text-2xl">Productos que te gustan</h1>
+  // Guard de hydration: favoritos viven en localStorage (persist).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const items = mounted ? lovedItems : [];
 
-      <div>
-        <div>
-          {lovedItems.length === 0 && <p>No tienes productos favoritos</p>}
+  const consultar = () => {
+    const baseUrl =
+      typeof window !== "undefined" ? window.location.origin : undefined;
+    window.open(
+      buildOrderWhatsappUrl(items, {
+        baseUrl,
+        intro: "Hola, quiero consultar por estos productos:",
+      }),
+      "_blank"
+    );
+  };
+
+  return (
+    <div className="max-w-3xl px-4 py-16 mx-auto sm:px-6">
+      <h1 className="mb-6 font-display text-3xl font-bold">Mis favoritos</h1>
+
+      {items.length === 0 ? (
+        <EmptyState
+          title="Todavía no tenés favoritos"
+          description="Marcá productos con el corazón para guardarlos acá."
+        >
+          <Button asChild className="mt-2">
+            <Link href="/products">Explorar productos</Link>
+          </Button>
+        </EmptyState>
+      ) : (
+        <>
           <ul>
-            {lovedItems.map((item) => (
+            {items.map((item) => (
               <LovedItemProduct key={item.id} product={item} />
             ))}
           </ul>
-        </div>
-        <div>
-          <Button
-            className="w-full bg-green-600 text-white text-md hover:bg-green-700"
-            onClick={() => {
-              const phoneNumber = "+524494056193";
-              const message = `Quiero más información de ${lovedItems.map(
-                (item) => item.productName
-              )}`;
-              const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
-                message
-              )}`;
-              window.open(whatsappUrl, "_blank");
-            }}
-          >
-            <MessageCircle size={20} />
-            <span>Mándanos un mensaje</span>
-          </Button>
-        </div>
-      </div>
+
+          <Separator className="my-6" />
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              {items.length} {items.length === 1 ? "favorito" : "favoritos"}
+            </p>
+            <Button
+              type="button"
+              onClick={consultar}
+              className="bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90 active:bg-whatsapp/80"
+            >
+              <MessageCircle className="size-4" />
+              Consultar por WhatsApp
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
