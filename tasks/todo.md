@@ -1,24 +1,24 @@
-# TODO — Fase 1: Fundaciones del Design System
+# TODO — Fase 2: Product Card unificado + precios + badge "Oferta"
 
-Lista de tasks derivada de `tasks/plan.md`. **Fase 1 COMPLETA** (rama `redesign/phase-1-design-foundations`).
+Lista derivada de `tasks/plan.md`. Implementar en orden con `/g-build`.
+> Fase 1 (fundaciones del design system) ✓ completada — ver git log.
 
-## Phase 1A — Eliminar dark mode
-- [x] **Task 1** — Quitar andamiaje dark + desacoplar sonner + remover `next-themes` (RF-4) · M — `dcb4906`
-- [x] **Task 2** — Limpiar clases `dark:` inertes en componentes (RF-4) · S — `820170a`
-- [x] **Checkpoint A** — dark mode 100% fuera; lint+typecheck ok ✓
+## Phase 2A — Fundaciones del card
+- [ ] **Task 1** — Tipar y traer `isRebaja` (ProductType + strapi) (RF-7/9) · S
+- [ ] **Task 2** — `formatPrice` robusto + helper `lib/whatsapp.ts` (RF-11/8) · S
+- [ ] **Task 3** — Componente `ProductCard` unificado (RF-6/7/8/10) · M
+- [ ] **Checkpoint A** — card renderiza ok; `tsc`+`lint`+compilación limpios
 
-## Phase 1B — Identidad de marca
-- [x] **Task 3** — Tokens de color de marca (azul `#0d4c99`, turquesa, `--whatsapp`, `--offer`) (RF-1) · M — `a1d4a95`
-- [x] **Task 4** — Cablear tipografía (Plus Jakarta Sans + Sora), quitar Geist (RF-2) · S — `022f301`
-- [x] **Checkpoint B** — marca + fuente visibles; sin geist/sidebar tokens ✓
-
-## Phase 1C — Componentes base
-- [x] **Task 5** — Componente `Input` shadcn (RF-5) · S — `1641b3c`
-- [x] **Task 6** — Refinar button + reestilizar wordmark navbar/footer (RF-3 + §3) · M — `e83848e`
-- [x] **Checkpoint C** — Fase 1 completa ✓
+## Phase 2B — Migración de superficies (paralelizables; dependen de Task 3)
+- [ ] **Task 4** — Migrar grid `/products` + borrar `carousel-products.tsx` · S
+- [ ] **Task 5** — Migrar categoría + home section + borrar `product-card.tsx` y `category-section.tsx` muerto · M
+- [ ] **Task 6** — Migrar relacionados + borrar `related-product-card.tsx` y `related-products.tsx` muerto · M
+- [ ] **Checkpoint B** — superficies principales unificadas
+- [ ] **Task 7** — Migrar carruseles (destacados+rebajas) + limpiar legacy muerto (`featured-products.tsx`, `rebaja-products.tsx`, hooks `api/`) · M
+- [ ] **Checkpoint C** — una sola card en todo el código; Fase 2 completa
 
 ---
-**Verificación por task:** `grep` asserts + `npx tsc --noEmit` + `npx next lint` + `next build` (etapa de compilación).
-**Limitación de entorno:** `next build` no completa la generación estática sin `NEXT_PUBLIC_BACKEND_URL` (backend Strapi) — preexistente, ajeno a estos cambios. Falta verificación visual con `npm run dev` apuntando al backend real.
+**Orden de dependencias:** (1, 2) → 3 → (4, 5, 6, 7)
+**Verificación por task:** `npx tsc --noEmit` + `npx next lint` + `next build` (compilación) + chequeo visual `npm run dev` con backend Strapi.
 
-**Siguiente:** Fase 2 — Product card unificado + precios mayorista-first + badge "Oferta" (consume los tokens `--offer`, `--fresh`, `--whatsapp` y el componente `Input` creados acá).
+**Variantes a eliminar (5 activas + muertas):** `category/.../product-card.tsx`, `products/.../carousel-products.tsx`, `related-product-card.tsx`, markup inline de los 2 carruseles; muertos: `category-section.tsx`, `related-products.tsx`, `featured-products.tsx`, `rebaja-products.tsx`.

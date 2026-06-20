@@ -46,9 +46,10 @@ function buildProductPopulate(includeDescription: boolean = false): URLSearchPar
   params.append('fields[4]', 'price_mayoreo');
   params.append('fields[5]', 'isFeatured');
   params.append('fields[6]', 'active');
+  params.append('fields[7]', 'isRebaja');
 
   if (includeDescription) {
-    params.append('fields[7]', 'description');
+    params.append('fields[8]', 'description');
   }
 
   return params;

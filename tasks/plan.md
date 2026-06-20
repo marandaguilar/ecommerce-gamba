@@ -1,179 +1,193 @@
-# Implementation Plan — Fase 1: Fundaciones del Design System (Gamba)
+# Implementation Plan — Fase 2: Product Card unificado + precios + badge "Oferta"
 
-> Deriva de `Spec.md` → sección 11, Fase 1. Cubre **RF-1 a RF-5**: tokens de marca, tipografía cableada, eliminación de dark mode y componentes base (button/card/input) + reestilizado del wordmark.
+> Deriva de `Spec.md` → sección 11, Fase 2. Cubre **RF-6 a RF-11**: un único componente de product card, precios mayorista-first, badge "Oferta", `next/image` y `formatPrice` consistente.
 > **Read-only plan.** La implementación es responsabilidad de `/g-build`.
+> Fase 1 (fundaciones del design system) ya completada — ver git log de `redesign/phase-1-design-foundations`.
 
 ## Overview
 
-Convertir el preset genérico de shadcn (gris/negro, tipografía rota, dark mode muerto) en una base de diseño con identidad de marca: azul `#0d4c99` como `--primary` real, acentos turquesa, tipografía bien cableada vía `next/font`, dark mode eliminado por completo, y componentes base (botón, card, input) y wordmark coherentes. Es la fundación que habilita las fases 2-7.
+Hoy existen **5 variantes divergentes** del product card que muestran información inconsistente (unas con doble precio, otras solo el nombre), usan `<img>` nativo y duplican lógica. Esta fase crea **un único `ProductCard`** que consume los tokens de la Fase 1 (`--offer`, `--whatsapp`, `--fresh`, `--primary`), muestra el **precio mayoreo como protagonista**, un **badge "Oferta"** cuando `isRebaja`, usa `next/image`, y un CTA orientado a conversión (WhatsApp + favorito). Luego migra todos los consumidores a ese card y elimina las variantes y el código muerto.
 
 ## Architecture Decisions
 
-- **Dark mode se elimina, no se desactiva.** Se borra el andamiaje (`theme-provider`, `toggle-theme`), se quita `next-themes`, se elimina el bloque `.dark`, el `@custom-variant dark` y **todas** las clases `dark:`. Rationale: en Tailwind v4 `dark:` es built-in (`prefers-color-scheme`); dejar clases `dark:` sin el `@custom-variant` reactivaría estilos oscuros según el SO del visitante → bug. Limpiar las clases es obligatorio, no opcional.
-- **`sonner.tsx` se desacopla de `next-themes`.** Hoy hace `useTheme()` y pasa `theme` al `<Sonner>`. Se reemplaza por `theme="light"` fijo para poder remover la dependencia sin romper el Toaster (que está montado en `layout.tsx`).
-- **Tipografía (decisión):** **Plus Jakarta Sans** para cuerpo/UI (`--font-sans`) y **Sora** para display/títulos/precios (`--font-display`), ambas vía `next/font/google`. Se elimina toda referencia a Geist. *(g-build puede cambiar la familia si el usuario lo pide; el cableado es lo que importa.)*
-- **Tokens en oklch** dentro de `:root` de `globals.css`, mapeados en `@theme inline`. Se agregan tokens semánticos `--whatsapp` (verde, solo WhatsApp) y `--offer` (badge oferta). Se eliminan los tokens `--sidebar-*` (sin uso) para reducir ruido; los `--chart-*` se mantienen salvo confirmación de que son código muerto.
-- **shadcn/Radix se mantiene** como base; el `Input` se agrega como componente shadcn estándar (no existe hoy).
-- **Verificación sin tests:** el repo no tiene suite de tests. La verificación de cada task es `npm run lint` + `npm run build` (deben pasar sin errores) + chequeo visual manual con `npm run dev`.
+- **Un solo componente** `components/shared/product-card.tsx`, agnóstico al ancho (llena su contenedor) para servir tanto a grids (2-5 columnas) como a `CarouselItem` (basis-1/5). Reemplaza las 5 variantes.
+- **`next/image` con `fill` + `sizes`** dentro de un contenedor `relative` de alto fijo y `object-contain` (los productos de limpieza tienen fondos variados). El host de imágenes **ya está configurado** en `next.config.ts` (`**.strapiapp.com` + host del backend) → no se toca config.
+- **Precio mayorista-first (RF-10):** mayoreo grande/bold/`text-primary`; menudeo chico/`text-muted-foreground` con etiqueta. Si falta `price_mayoreo`, el menudeo pasa a protagonista (Spec §8).
+- **Badge "Oferta" (RF-9):** puramente visual, `bg-offer text-offer-foreground`, mostrado cuando `product.isRebaja === true`. Requiere **tipar y traer** `isRebaja` (hoy el backend lo filtra pero no lo selecciona ni está en `ProductType`).
+- **Badge de categoría:** se reutiliza el componente existente `components/shared/product-categories.tsx` (su mapa de colores hardcodeado queda fuera de scope; se anota).
+- **CTA de conversión (RF-8):** en esta fase, **"Pedir por WhatsApp"** (mensaje prellenado por producto via helper `lib/whatsapp.ts`) + **favorito** (corazón con toggle usando `useLovedProducts`). El botón **"Agregar a mi pedido"** (carrito multi-producto) es de la **Fase 5** y se deja anotado, no se implementa acá.
+- **`formatPrice` robusto (RF-11):** se agrega guarda para `undefined`/`NaN` (hoy produciría `$NaN`).
+- **Migración incremental por superficie:** se migra y verifica un consumidor a la vez, borrando cada card vieja recién cuando todos sus consumidores usan el unificado (rollback-friendly).
+- **Verificación:** sin suite de tests (cambios de UI/datos). Gates: `npx tsc --noEmit` + `npx next lint` + `next build` (etapa de compilación) + chequeo visual con `npm run dev` apuntando a Strapi.
 
 ## Grafo de dependencias
 
 ```
-Task 1 (quitar andamiaje dark + sonner + .dark CSS)
-        │
-        └── Task 2 (limpiar clases dark: inertes)   ← juntas dejan dark mode 100% fuera
-                    │
-                    ├── Task 3 (tokens de marca en globals.css)
-                    │           │
-                    │           ├── Task 4 (tipografía: layout + @theme)
-                    │           ├── Task 5 (componente Input)
-                    │           └── Task 6 (refinar button/card + wordmark)
+Task 1 (isRebaja: ProductType + strapi)   Task 2 (formatPrice guard + whatsapp helper)
+                 \                              /
+                  \                            /
+                   ▼                          ▼
+                 Task 3 (ProductCard unificado)
+                            │
+        ┌───────────────────┼───────────────────┬──────────────────┐
+        ▼                   ▼                   ▼                  ▼
+   Task 4 (/products)  Task 5 (categoría +   Task 6 (relacionados)  Task 7 (carruseles
+                        home sections)                              + limpieza legacy)
 ```
 
-Tasks 1 y 2 modifican `globals.css`/componentes para sacar dark mode → van **antes** de tocar tokens. Tasks 4, 5 y 6 consumen tokens/fuentes → después de Task 3.
+Tasks 1 y 2 son independientes entre sí. Task 3 depende de ambas. Tasks 4-7 dependen solo de Task 3 y son **paralelizables** (tocan archivos disjuntos), pero el orden propuesto valida el card en la superficie más simple primero (fail-fast).
 
 ## Task List
 
-### Phase 1A — Eliminar dark mode
+### Phase 2A — Fundaciones del card
 
-#### Task 1: Quitar andamiaje de dark mode y desacoplar sonner (RF-4)
-**Descripción:** Eliminar el código muerto de theming y la dependencia `next-themes`, dejando el Toaster funcional con tema claro fijo y el CSS sin el bloque oscuro.
+#### Task 1: Tipar y traer `isRebaja` (RF-7, RF-9)
+**Descripción:** Habilitar el dato que dispara el badge "Oferta": agregar `isRebaja` al tipo de producto y seleccionarlo en la query de Strapi para que venga por producto en grids/carruseles mixtos.
 
 **Criterios de aceptación:**
-- [ ] Se eliminan `components/theme-provider.tsx` y `components/toggle-theme.tsx`.
-- [ ] `components/ui/sonner.tsx` ya no importa ni usa `next-themes`; usa `theme="light"` fijo.
-- [ ] `app/globals.css`: se elimina el bloque `.dark { … }` (líneas ~81-113) y el `@custom-variant dark (…)` (línea ~4).
-- [ ] Se remueve `next-themes` de `package.json`.
-- [ ] No queda ninguna referencia a `next-themes`/`useTheme`/`ThemeProvider`/`ToggleTheme` en el código (`grep` limpio).
+- [ ] `types/product.ts`: `ProductType` incluye `isRebaja: boolean | null`.
+- [ ] `lib/data/strapi.ts` → `buildProductPopulate` agrega `fields` para `isRebaja` (y se mantiene `isFeatured`).
+- [ ] El campo viaja en las respuestas de `getProducts`, `getCategoryProducts`, `getFeaturedProducts`, `getRebajaProducts`, `getRelatedProducts` (todas usan `buildProductPopulate`).
 
 **Verificación:**
-- [ ] `grep -rn "next-themes\|useTheme\|ToggleTheme\|ThemeProvider" --include="*.ts*" .` → sin resultados.
-- [ ] `npm run build` exitoso.
-- [ ] Manual: `npm run dev` → los toasts (sonner) siguen apareciendo con estilo claro.
+- [ ] `npx tsc --noEmit` sin errores.
+- [ ] Manual (`npm run dev`): inspeccionar el payload de `/api/products` o un `console.log` temporal confirma que cada producto trae `isRebaja`.
 
 **Dependencias:** Ninguna.
-**Archivos probablemente tocados:** `components/theme-provider.tsx` (del), `components/toggle-theme.tsx` (del), `components/ui/sonner.tsx`, `app/globals.css`, `package.json`.
-**Scope estimado:** Medium.
-
-#### Task 2: Limpiar clases `dark:` inertes en componentes (RF-4)
-**Descripción:** Tras quitar el `@custom-variant dark`, las clases `dark:` restantes reactivarían estilos oscuros vía `prefers-color-scheme`. Eliminarlas de todos los componentes que las usan.
-
-**Criterios de aceptación:**
-- [ ] Se eliminan todas las utilidades `dark:` de: `components/ui/button.tsx`, `components/ui/radio-group.tsx`, `components/ui/dropdown-menu.tsx`, `components/shared/products-counter.tsx`.
-- [ ] El comportamiento visual en tema claro es idéntico al previo (solo se borran variantes que nunca aplicaban en claro).
-
-**Verificación:**
-- [ ] `grep -rn "dark:" --include="*.tsx" components app` → sin resultados.
-- [ ] `npm run build` exitoso.
-- [ ] Manual: con el SO en modo oscuro, la app sigue viéndose en claro (sin estilos oscuros parásitos).
-
-**Dependencias:** Task 1.
-**Archivos probablemente tocados:** `components/ui/button.tsx`, `components/ui/radio-group.tsx`, `components/ui/dropdown-menu.tsx`, `components/shared/products-counter.tsx`.
-**Scope estimado:** Small (mecánico).
-
-### Checkpoint A — Dark mode eliminado
-- [ ] `grep` de `next-themes` y `dark:` ambos vacíos.
-- [ ] `npm run lint` y `npm run build` limpios.
-- [ ] Con SO en dark, la app permanece en tema claro.
-- [ ] Review humano antes de seguir.
-
-### Phase 1B — Identidad de marca
-
-#### Task 3: Tokens de color de marca (RF-1)
-**Descripción:** Reemplazar el preset neutral de shadcn por la paleta de marca en `:root`, agregar tokens semánticos y mapearlos en `@theme inline`.
-
-**Criterios de aceptación:**
-- [ ] `--primary` = azul de marca `#0d4c99` (en oklch) con `--primary-foreground` legible (blanco).
-- [ ] Acento turquesa/celeste definido (`--accent` o token nuevo) acorde a "fresco/higiene".
-- [ ] Tokens semánticos nuevos: `--whatsapp` (verde) y `--offer` (badge oferta), mapeados en `@theme inline` (`--color-whatsapp`, `--color-offer`).
-- [ ] Escala de grises neutra para texto secundario/bordes coherente.
-- [ ] Se eliminan los tokens `--sidebar-*` sin uso (de `:root` y de `@theme inline`).
-- [ ] Contraste AA del azul sobre blanco verificado (RNF-3).
-
-**Verificación:**
-- [ ] `npm run build` exitoso.
-- [ ] Manual: navbar/botones primarios se ven azul de marca; no quedan grises del preset como color principal.
-- [ ] Contraste texto/fondo ≥ 4.5:1 (chequeo con herramienta).
-
-**Dependencias:** Task 1 (CSS ya sin `.dark`).
-**Archivos probablemente tocados:** `app/globals.css`.
-**Scope estimado:** Medium.
-
-#### Task 4: Cablear tipografía (RF-2)
-**Descripción:** Cargar Plus Jakarta Sans (cuerpo) y Sora (display) vía `next/font`, mapear `--font-sans`/`--font-display` y eliminar las referencias muertas a Geist.
-
-**Criterios de aceptación:**
-- [ ] `app/layout.tsx` carga ambas fuentes con `next/font/google` y aplica sus variables al `<body>`.
-- [ ] `app/globals.css` `@theme inline`: `--font-sans` apunta a la variable de Plus Jakarta Sans y se agrega `--font-display` (Sora); se elimina `--font-mono`/Geist si no se usa.
-- [ ] No queda ninguna referencia a `geist`.
-- [ ] El texto del sitio renderiza efectivamente con la fuente nueva (no la system default).
-
-**Verificación:**
-- [ ] `grep -rn "geist" .` → sin resultados.
-- [ ] `npm run build` exitoso.
-- [ ] Manual: inspeccionar en el navegador que `body` computa `font-family` = Plus Jakarta Sans.
-
-**Dependencias:** Task 3 (comparten `@theme inline`/`globals.css`).
-**Archivos probablemente tocados:** `app/layout.tsx`, `app/globals.css`.
+**Archivos probablemente tocados:** `types/product.ts`, `lib/data/strapi.ts`.
 **Scope estimado:** Small.
 
-### Checkpoint B — Identidad visible
-- [ ] `npm run lint` y `npm run build` limpios.
-- [ ] La app muestra azul de marca + tipografía nueva de forma consistente.
-- [ ] Sin referencias a geist ni a tokens sidebar.
-- [ ] Review humano.
-
-### Phase 1C — Componentes base
-
-#### Task 5: Componente Input estándar (RF-5)
-**Descripción:** Agregar `components/ui/input.tsx` (shadcn) consistente con los tokens, para reemplazar los inputs nativos en fases futuras.
+#### Task 2: `formatPrice` robusto + helper de WhatsApp (RF-11, RF-8)
+**Descripción:** Endurecer el formateo de precios y centralizar la construcción del mensaje/URL de WhatsApp por producto, reutilizable por el card y (luego) por la Fase 5.
 
 **Criterios de aceptación:**
-- [ ] Existe `components/ui/input.tsx` con la API shadcn estándar y estados focus/disabled usando los tokens (`--ring`, `--border`, `--input`).
-- [ ] Sin clases `dark:`.
-- [ ] Compila y es importable vía `@/components/ui/input`.
+- [ ] `lib/formatPrice.ts`: si el valor es `undefined`/`null`/`NaN`, no devuelve `$NaN` (devuelve `null` o `"Consultar"` — decidir, ver Open Questions).
+- [ ] Nuevo `lib/whatsapp.ts` con una función pura que recibe un producto (o nombre + slug) y devuelve la URL `https://wa.me/<phone>?text=...` con el mensaje prellenado; el número de teléfono se define como constante única (hoy duplicado en navbar e info-product).
+- [ ] Sin dependencias nuevas.
 
 **Verificación:**
-- [ ] `npm run build` exitoso.
-- [ ] Manual: render de prueba del Input muestra foco con anillo del color primario.
+- [ ] `npx tsc --noEmit` sin errores.
+- [ ] Check manual: `formatPrice(undefined)` y `formatPrice(NaN)` no producen `$NaN`; la URL generada abre WhatsApp con el texto correcto.
 
-**Dependencias:** Task 3 (tokens).
-**Archivos probablemente tocados:** `components/ui/input.tsx` (nuevo).
+**Dependencias:** Ninguna.
+**Archivos probablemente tocados:** `lib/formatPrice.ts`, `lib/whatsapp.ts` (nuevo).
 **Scope estimado:** Small.
 
-#### Task 6: Refinar button/card + reestilizar wordmark (RF-3 + Spec §3)
-**Descripción:** Ajustar escala de radius/sombras/estados de `button` y `card` para coherencia, y reestilizar el wordmark "GAMBA" (navbar/footer) para que consuma el token `--primary` en vez del literal `#0d4c99` y se vea más profesional (usando la fuente display).
+#### Task 3: Componente `ProductCard` unificado (RF-6, RF-7, RF-8, RF-10)
+**Descripción:** Crear el card único que reemplazará todas las variantes. Agnóstico al ancho, con imagen optimizada, badges, precios mayorista-first y CTAs de conversión.
 
 **Criterios de aceptación:**
-- [ ] `button.tsx` y `card.tsx` con estados hover/focus/active consistentes y radius/sombra derivados de tokens; sin `dark:` (ya limpiado en Task 2, verificar).
-- [ ] `components/navbar.tsx`: el wordmark deja de usar `text-[#0d4c99]` y usa `text-primary`; tipografía/peso/espaciado mejorados con `font-display`.
-- [ ] `components/footer.tsx`: wordmark coherente con el navbar; se corrigen clases duplicadas si las hay.
-- [ ] El nombre "GAMBA" no cambia (RN-6); "1er aniversario" puede separarse como etiqueta.
+- [ ] Nuevo `components/shared/product-card.tsx` (client component) con props `{ product: ProductType; priority?: boolean; className?: string }`.
+- [ ] Imagen con **`next/image`** (`fill` + `sizes`) en contenedor `relative` de alto fijo, `object-contain`; **placeholder** cuando no hay imágenes (Spec §8).
+- [ ] **Badge de categoría** (reusa `ProductCategories`) y **badge "Oferta"** (`bg-offer text-offer-foreground`) visible solo si `product.isRebaja`.
+- [ ] **Precio mayoreo protagonista** (`text-primary`, grande/bold) + **menudeo secundario** (`text-muted-foreground`, etiquetado); si falta mayoreo, menudeo pasa a protagonista.
+- [ ] **CTA "Pedir por WhatsApp"** (usa `lib/whatsapp.ts`) y **favorito** (corazón con toggle: relleno si está en `lovedItems`, alterna add/remove via `useLovedProducts`).
+- [ ] Nombre truncado consistente; navegación a `/product/[slug]` al click en imagen/nombre.
+- [ ] Sin clases `dark:`; usa tokens (consistencia con Fase 1).
 
 **Verificación:**
-- [ ] `npm run build` exitoso.
-- [ ] Manual: navbar/footer muestran el wordmark azul de marca con la fuente display; botones/cards consistentes en hover/focus.
+- [ ] `npx tsc --noEmit` + `npx next lint` limpios.
+- [ ] `next build` compila (etapa de compilación) sin errores de `next/image`/CSS.
+- [ ] Manual: renderizar el card aislado (o en una superficie ya migrada) muestra imagen, badges, mayoreo destacado y CTAs funcionando.
 
-**Dependencias:** Tasks 3, 4 (tokens + fuentes); revisa Task 2 (sin `dark:`).
-**Archivos probablemente tocados:** `components/ui/button.tsx`, `components/ui/card.tsx`, `components/navbar.tsx`, `components/footer.tsx`.
+**Dependencias:** Task 1, Task 2.
+**Archivos probablemente tocados:** `components/shared/product-card.tsx` (nuevo).
 **Scope estimado:** Medium.
 
-### Checkpoint C — Fase 1 completa
-- [ ] Todos los criterios de aceptación (Tasks 1-6) cumplidos.
-- [ ] `npm run lint` + `npm run build` limpios.
-- [ ] Recorrido manual: home, listado, detalle se ven con marca + fuente nuevas, sin dark mode, sin regresiones.
-- [ ] Listo para Fase 2 (Product card unificado).
+### Checkpoint A — Card listo
+- [ ] `tsc` + `lint` + compilación limpios.
+- [ ] El `ProductCard` renderiza correctamente en al menos una superficie de prueba.
+- [ ] Review humano antes de migrar consumidores.
+
+### Phase 2B — Migración de superficies
+
+#### Task 4: Migrar el grid de `/products` (RF-6)
+**Descripción:** Reemplazar la variante de card de la página de listado por el unificado y eliminar esa variante.
+
+**Criterios de aceptación:**
+- [ ] `app/(routes)/products/components/products-client-wrapper.tsx` usa `components/shared/product-card.tsx`.
+- [ ] Se elimina `app/(routes)/products/components/carousel-products.tsx`.
+- [ ] El grid responsive (2 cols mobile → 5 xl) se mantiene; las cards se ven consistentes.
+
+**Verificación:**
+- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
+- [ ] Manual: `/products` muestra el grid con el card nuevo, precios y badges correctos, sin regresión de layout.
+
+**Dependencias:** Task 3.
+**Archivos probablemente tocados:** `products-client-wrapper.tsx`, `carousel-products.tsx` (del).
+**Scope estimado:** Small.
+
+#### Task 5: Migrar categoría + sección de categoría del home (RF-6)
+**Descripción:** Migrar la página de categoría y la sección de categorías del home, y borrar la variante de card de categoría y su gemela muerta.
+
+**Criterios de aceptación:**
+- [ ] `app/(routes)/category/[categorySlug]/components/category-client-wrapper.tsx` y `components/category-section-server.tsx` usan el card unificado.
+- [ ] Se elimina `app/(routes)/category/[categorySlug]/components/product-card.tsx`.
+- [ ] Se elimina el componente muerto `components/category-section.tsx` (sin consumidores).
+
+**Verificación:**
+- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
+- [ ] Manual: `/category/[slug]` y la sección del home se ven con el card nuevo, sin regresión.
+
+**Dependencias:** Task 3.
+**Archivos probablemente tocados:** `category-client-wrapper.tsx`, `category-section-server.tsx`, `category/.../product-card.tsx` (del), `category-section.tsx` (del).
+**Scope estimado:** Medium.
+
+#### Task 6: Migrar productos relacionados (RF-6, RF-28 parcial)
+**Descripción:** Migrar la sección de relacionados del detalle al card unificado y borrar la variante de relacionados y su gemela muerta.
+
+**Criterios de aceptación:**
+- [ ] `app/(routes)/product/[productSlug]/components/related-products-server.tsx` usa el card unificado.
+- [ ] Se elimina `related-product-card.tsx`.
+- [ ] Se elimina el componente muerto `related-products.tsx` (sin consumidores).
+
+**Verificación:**
+- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
+- [ ] Manual: en una página de producto, los relacionados muestran el card nuevo (ahora con precio mayoreo, antes no tenían precio).
+
+**Dependencias:** Task 3.
+**Archivos probablemente tocados:** `related-products-server.tsx`, `related-product-card.tsx` (del), `related-products.tsx` (del).
+**Scope estimado:** Medium.
+
+### Checkpoint B — Superficies principales unificadas
+- [ ] Listado, categoría, home y relacionados usan el mismo card.
+- [ ] `tsc` + `lint` + compilación limpios; recorrido manual sin regresiones.
+
+#### Task 7: Migrar carruseles (destacados + rebajas) y limpiar legacy (RF-6, RNF-4)
+**Descripción:** Reemplazar el markup inline de los carruseles por el card unificado y eliminar las variantes legacy muertas y sus hooks huérfanos.
+
+**Criterios de aceptación:**
+- [ ] `components/featured-products-client.tsx` y `components/rebaja-products-client.tsx` renderizan `ProductCard` dentro de cada `CarouselItem` (corrige de paso el typo `ext-lg`).
+- [ ] El badge "Oferta" aparece naturalmente en el carrusel de rebajas (todos `isRebaja`) vía la lógica del card.
+- [ ] Se eliminan los componentes muertos `components/featured-products.tsx` y `components/rebaja-products.tsx`.
+- [ ] Se eliminan los hooks legacy huérfanos en `api/` que quedaron sin uso (`useGetFeaturedProducts`, `useGetRebajaProducts`) — verificar que no tengan otros consumidores antes de borrar.
+
+**Verificación:**
+- [ ] `npx tsc --noEmit` + `npx next lint` limpios; `next build` compila.
+- [ ] `grep -rn "featured-products\"\|rebaja-products\"\|useGetFeatured\|useGetRebaja"` sin referencias a lo borrado.
+- [ ] Manual: el home muestra ambos carruseles con el card nuevo; las rebajas con badge "Oferta".
+
+**Dependencias:** Task 3.
+**Archivos probablemente tocados:** `featured-products-client.tsx`, `rebaja-products-client.tsx`, `featured-products.tsx` (del), `rebaja-products.tsx` (del), `api/useGetFeaturedProducts.*` (del), `api/useGetRebajaProducts.*` (del).
+**Scope estimado:** Medium.
+
+### Checkpoint C — Fase 2 completa
+- [ ] **Una sola** implementación de product card en todo el código (`grep` no encuentra las variantes viejas).
+- [ ] Mayoreo protagonista, badge "Oferta", `next/image` y `formatPrice` consistentes en toda la app.
+- [ ] `tsc` + `lint` + compilación limpios; recorrido manual (home, listado, categoría, detalle) sin regresiones.
+- [ ] Listo para Fase 3 (header/navegación).
 
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| Quitar `@custom-variant dark` deja clases `dark:` activas vía `prefers-color-scheme` → estilos oscuros parásitos | Alto | Tasks 1 y 2 se completan **juntas** antes del Checkpoint A; verificar con SO en dark. |
-| Romper el Toaster al quitar `next-themes` | Medio | Task 1 desacopla `sonner.tsx` con `theme="light"` antes de remover la dependencia. |
-| Cambiar `--primary` afecta toda la UI (botones, links, focus) | Medio | Es el objetivo; validar contraste AA y recorrido visual en Checkpoint B. |
-| Elegir mal la fuente (gusto del usuario) | Bajo | Decisión por defecto (Jakarta+Sora); el cableado es lo central y la familia se cambia en una línea. |
-| Eliminar tokens `--chart-*`/`--sidebar-*` que estuvieran en uso | Bajo | Solo se eliminan `--sidebar-*` (confirmado sin uso); `--chart-*` se conservan salvo verificación. |
+| `next/image` con `fill` rompe layout (falta `relative`/`sizes`) o host no permitido | Medio | Contenedor `relative` + `sizes` explícito; host ya en `remotePatterns`; verificar en `dev`. |
+| Backend no devuelve `isRebaja` con el nombre esperado → badge nunca aparece | Medio | El filtro `filters[isRebaja]` ya existe (nombre confirmado); validar con payload real en dev. |
+| Regresión visual en carruseles por card width-agnóstico dentro de `CarouselItem` | Medio | El card llena el contenedor; el `basis-1/x` lo da el `CarouselItem`; verificar en dev. |
+| `next build` no completa sin `NEXT_PUBLIC_BACKEND_URL` | Bajo | Gate real = `tsc` + `lint` + compilación; verificación visual con backend en dev. |
+| Borrar un componente con consumidor oculto | Bajo | Cada borrado va tras migrar sus consumidores; `grep` de consumidores antes de borrar. |
 
 ## Open Questions
-- ¿Confirmás **Plus Jakarta Sans + Sora** como tipografías, o preferís otra familia? (no bloquea; default asumido).
-- ¿Eliminamos también los tokens `--chart-*` (aparentan ser código muerto) o los dejamos por las dudas?
+- **`formatPrice` con valor faltante:** ¿devolver `"Consultar"` (texto mayorista) o `null` (y que el card decida ocultar)? Default propuesto: `null`, y el card muestra solo el precio disponible / "Consultar precio".
+- **CTA del card:** ¿alcanza con "Pedir por WhatsApp" + favorito en esta fase (dejando "Agregar a mi pedido" para Fase 5), o querés un placeholder de "Mi pedido" ya visible? Default: solo WhatsApp + favorito.
+- **Badge de categoría:** su mapa de colores está hardcodeado (no usa tokens). ¿Migrarlo a tokens en esta fase o dejarlo para más adelante? Default: dejarlo (fuera de scope de Fase 2).
