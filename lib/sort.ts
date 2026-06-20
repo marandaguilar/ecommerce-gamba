@@ -4,7 +4,14 @@
  * evitando inyectar un `sort` arbitrario en la query.
  */
 
-export type SortKey = "novedades" | "precio_asc" | "precio_desc" | "nombre";
+export const SORT_KEYS = [
+  "novedades",
+  "precio_asc",
+  "precio_desc",
+  "nombre",
+] as const;
+
+export type SortKey = (typeof SORT_KEYS)[number];
 
 export const DEFAULT_SORT: SortKey = "novedades";
 
