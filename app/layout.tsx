@@ -6,6 +6,7 @@ import Footer from "@/components/footer";
 import WhatsappFab from "@/components/whatsapp-fab";
 import { Toaster } from "sonner";
 import NextTopLoader from "nextjs-toploader";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { getAllCategories } from "@/lib/data/strapi";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -52,11 +53,13 @@ export default async function RootLayout({
           zIndex={1600}
           showAtBottom={false}
         />
-        <Navbar categories={categories} />
-        {children}
-        <Toaster />
-        <Footer />
-        <WhatsappFab />
+        <NuqsAdapter>
+          <Navbar categories={categories} />
+          {children}
+          <Toaster />
+          <Footer />
+          <WhatsappFab />
+        </NuqsAdapter>
       </body>
     </html>
   );
