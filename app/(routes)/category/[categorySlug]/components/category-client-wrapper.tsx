@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { ProductType } from "@/types/product";
-import ProductCard from "./product-card";
+import ProductCard from "@/components/shared/product-card";
 import CategorySearch from "./search";
 import { Button } from "@/components/ui/button";
 import ProductsCounter from "@/components/shared/products-counter";
