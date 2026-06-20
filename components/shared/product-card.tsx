@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, MessageCircle } from "lucide-react";
+import { Heart, MessageCircle, Plus } from "lucide-react";
 
 import { ProductType } from "@/types/product";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/formatPrice";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 import { useLovedProducts } from "@/hooks/use-loved-products";
+import { useCart } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
 import ProductCategories from "@/components/shared/product-categories";
 
@@ -22,6 +23,7 @@ type ProductCardProps = {
 
 const ProductCard = ({ product, priority = false, className }: ProductCardProps) => {
   const { lovedItems, addLovedItem, removeLovedItem } = useLovedProducts();
+  const { addItem } = useCart();
 
   // Evita hydration mismatch: el estado de favorito (persistido en
   // localStorage) solo se refleja después de montar en el cliente.
@@ -125,25 +127,42 @@ const ProductCard = ({ product, priority = false, className }: ProductCardProps)
         </div>
 
         {/* CTAs */}
-        <div className="mt-auto flex items-center gap-2">
+        <div className="mt-auto flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              onClick={openWhatsapp}
+              className="flex-1 bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90 active:bg-whatsapp/80"
+            >
+              <MessageCircle className="size-4" />
+              Pedir
+            </Button>
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              onClick={toggleLoved}
+              aria-pressed={isLoved}
+              aria-label={
+                isLoved ? "Quitar de favoritos" : "Agregar a favoritos"
+              }
+            >
+              <Heart
+                className={cn("size-4", isLoved && "fill-current text-primary")}
+              />
+            </Button>
+          </div>
           <Button
             type="button"
             size="sm"
-            onClick={openWhatsapp}
-            className="flex-1 bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90 active:bg-whatsapp/80"
-          >
-            <MessageCircle className="size-4" />
-            Pedir
-          </Button>
-          <Button
-            type="button"
-            size="icon"
             variant="outline"
-            onClick={toggleLoved}
-            aria-pressed={isLoved}
-            aria-label={isLoved ? "Quitar de favoritos" : "Agregar a favoritos"}
+            onClick={() => addItem(product)}
+            aria-label={`Agregar ${product.productName} a mi pedido`}
+            className="w-full"
           >
-            <Heart className={cn("size-4", isLoved && "fill-current text-primary")} />
+            <Plus className="size-4" />
+            Agregar a mi pedido
           </Button>
         </div>
       </div>
