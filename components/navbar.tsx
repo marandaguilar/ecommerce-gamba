@@ -16,12 +16,14 @@ const Navbar = () => {
       <div className="flex justify-between items-center p-4 mx-auto cursor-pointer sm:max-w-4xl md:max-w-6xl">
         <div className="text-center">
           <h1
-            className="text-3xl font-bold text-[#0d4c99]"
+            className="font-display text-3xl font-extrabold tracking-tight text-primary"
             onClick={() => router.push("/")}
           >
             GAMBA
           </h1>
-          <p className="text-sm font-semibold">1er aniversario</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            1er aniversario
+          </p>
         </div>
         <div className="items-center justify-center hidden sm:flex">
           <MenuList />
@@ -33,7 +35,7 @@ const Navbar = () => {
           <MessageCircle
             size={30}
             strokeWidth={1}
-            className="cursor-pointer text-green-600 fill-green-600"
+            className="cursor-pointer text-whatsapp fill-whatsapp"
             onClick={() => {
               const phoneNumber = "+524494056193";
               const message = `Quiero más información`;
