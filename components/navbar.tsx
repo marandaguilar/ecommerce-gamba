@@ -11,6 +11,7 @@ import { useLovedProducts } from "@/hooks/use-loved-products";
 import { useCart } from "@/hooks/use-cart";
 import { CategoryType } from "@/types/category";
 import { cn } from "@/lib/utils";
+import { buildGeneralWhatsappUrl } from "@/lib/whatsapp";
 
 interface NavbarProps {
   categories: CategoryType[];
@@ -29,12 +30,7 @@ const Navbar = ({ categories }: NavbarProps) => {
   const cartCount = mounted ? items.length : 0;
 
   const openWhatsapp = () => {
-    const phoneNumber = "+524494056193";
-    const message = "Quiero más información";
-    window.open(
-      `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`,
-      "_blank"
-    );
+    window.open(buildGeneralWhatsappUrl(), "_blank");
   };
 
   return (
