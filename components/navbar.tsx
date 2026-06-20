@@ -6,6 +6,7 @@ import { Heart, MessageCircle, ShoppingCart } from "lucide-react";
 
 import MenuList from "./menu-list";
 import ItemsMenuMobile from "./items-menu-mobile";
+import HeaderSearch from "./header-search";
 import { useLovedProducts } from "@/hooks/use-loved-products";
 import { useCart } from "@/hooks/use-cart";
 import { CategoryType } from "@/types/category";
@@ -50,7 +51,8 @@ const Navbar = ({ categories }: NavbarProps) => {
             1er aniversario
           </p>
         </div>
-        <div className="items-center justify-center hidden sm:flex">
+        <div className="hidden flex-1 items-center justify-end gap-4 sm:flex">
+          <HeaderSearch className="max-w-xs" />
           <MenuList categories={categories} />
         </div>
         <div className="flex sm:hidden">

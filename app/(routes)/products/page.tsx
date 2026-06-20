@@ -6,10 +6,17 @@ export const metadata = {
   description: "Explora nuestro catálogo completo de productos",
 };
 
-export default async function ProductsPage() {
-  // Fetch initial products and categories server-side in parallel
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ search?: string }>;
+}) {
+  const { search } = await searchParams;
+  const initialSearch = search?.trim() ?? "";
+
+  // Fetch initial products (filtrados por la búsqueda de la URL) y categorías
   const [productsResponse, categories] = await Promise.all([
-    getProducts({ page: 1, pageSize: 24 }),
+    getProducts({ page: 1, pageSize: 24, search: initialSearch || undefined }),
     getAllCategories(),
   ]);
 
@@ -20,6 +27,7 @@ export default async function ProductsPage() {
         initialProducts={productsResponse.data}
         initialPagination={productsResponse.meta.pagination}
         categories={categories}
+        initialSearch={initialSearch}
       />
     </div>
   );

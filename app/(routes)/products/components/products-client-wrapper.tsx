@@ -20,6 +20,7 @@ interface ProductsClientWrapperProps {
   initialProducts: ProductType[];
   initialPagination?: PaginationMeta;
   categories: CategoryType[];
+  initialSearch?: string;
 }
 
 const PAGE_SIZE = 24;
@@ -28,9 +29,10 @@ export default function ProductsClientWrapper({
   initialProducts,
   initialPagination,
   categories,
+  initialSearch = "",
 }: ProductsClientWrapperProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>(initialSearch);
 
   const [products, setProducts] = useState<ProductType[]>(initialProducts ?? []);
   const [page, setPage] = useState<number>(initialPagination?.page ?? 1);
