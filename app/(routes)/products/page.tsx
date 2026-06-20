@@ -4,7 +4,7 @@ import { getProducts, getAllCategories } from "@/lib/data/strapi";
 import { isSortKey, DEFAULT_SORT } from "@/lib/sort";
 import { ProductType } from "@/types/product";
 import ProductCard from "@/components/shared/product-card";
-import ProductsControls from "./components/products-controls";
+import ListingControls from "@/components/listing/listing-controls";
 import PaginationControls from "@/components/listing/pagination-controls";
 import ProductsCounter from "@/components/shared/products-counter";
 import EmptyState from "@/components/listing/empty-state";
@@ -81,7 +81,7 @@ export default async function ProductsPage({
         Todos los productos
       </h1>
 
-      <ProductsControls categories={categories} />
+      <ListingControls categories={categories} />
 
       <Separator className="my-6" />
 
