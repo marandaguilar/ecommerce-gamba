@@ -1,27 +1,26 @@
-# TODO — Fase 5: Conversión (WhatsApp + "Mi pedido")
+# TODO — Fase 6: Detalle de producto (galería)
 
-**Fase 5 COMPLETA** (rama `redesign/phase-1-design-foundations`).
-> Fases 1, 2, 3, 4 ✓ completas — ver git log.
+**Fase 6 PENDIENTE** (rama `redesign/phase-1-design-foundations`).
+> Fases 1, 2, 3, 4, 5 ✓ completas — ver git log.
 
-Plan completo en `tasks/plan.md`. Cubre **RF-12 a RF-16**.
+Plan completo en `tasks/plan.md`. Cubre **RF-26 a RF-28**.
+> RF-27 (jerarquía + CTAs) ya resuelto en Fase 5 (Task 4 `info-product`); RF-28 ya usa el card unificado — Fase 6 = **galería** + pulido skeleton/relacionados.
 
-## Phase 5A — Fundación de conversión
-- [x] **Task 1** — Helper `buildOrderWhatsappUrl` + tests (RF-12/14) · S — `8ffe262`
-- [x] **Task 2** — `/cart` → "Mi pedido" + envío WhatsApp (RF-14/15, edge: pedido vacío) · M — `2e229d4`
-- [x] **Checkpoint A** — pedido enviable por WhatsApp como un solo mensaje ✓
+## Phase 6A — Galería
+- [ ] **Task 1** — Imagen principal `next/image` + aspecto fijo + placeholder (helper testeable) (RF-26/RNF-1, edge: sin imágenes) · M
+- [ ] **Task 2** — Thumbnails sincronizados con embla (`setApi`) (RF-26) · M
+- [ ] **Checkpoint A** — galería navegable y performante (next/image + thumbnails)
 
-## Phase 5B — Orígenes del pedido y coherencia
-- [x] **Task 3** — CTA "Agregar a mi pedido" en product card (RF-8/14) · S — `91e1102`
-- [x] **Task 4** — Detalle: CTAs WhatsApp + agregar + favorito toggle + precios mayorista-first (RF-12/14/27 parcial) · M — `0d8fbfb`
-- [x] **Task 5** — Favoritos rediseñada + WhatsApp + mover a pedido (RF-13/15) · M — `f8005dd`
-- [x] **Task 6** — Navbar: WhatsApp por helper + coherencia copy (RF-12/19) · XS — pendiente commit
-- [x] **Checkpoint B** — embudo completo, cero WhatsApp hardcodeado ✓
+## Phase 6B — Zoom y soporte
+- [ ] **Task 3** — Zoom de imagen, overlay hand-rolled sin radix-dialog (RF-26, opcional) · M
+- [ ] **Task 4** — Skeleton + relacionados alineados al design system (RF-25/28/24) · S
+- [ ] **Checkpoint B** — detalle completo y consistente
 
 ---
-**Verificación por task:** `npm test` + `npx tsc --noEmit` + `npx next lint` + `next build` (compilación). Visual pendiente con `npm run dev` + backend.
+**Verificación por task:** `npm test` + `npx tsc --noEmit` + `npx next lint` + `next build` (compilación). Visual/runtime con `npm run dev` + backend + **Chrome DevTools** (LCP/CLS, navegación, zoom, consola limpia).
 
-**Decisiones clave:** un solo `buildOrderWhatsappUrl` reusado por pedido y favoritos; "Mi pedido" reusa el store `useCart` SIN cantidades; ruta `/cart` se mantiene (solo cambia copy); verde solo vía token `--whatsapp`; mayorista-first en todo el embudo; `EmptyState` (Fase 4) para estados vacíos.
+**Decisiones clave:** reutilizar el carousel embla existente (cero deps nuevas, RNF-5); `next/image` + contenedor de aspecto (anti-CLS); placeholder de marca vía helper puro (único TDD real de la fase); thumbnails bidireccionales vía `setApi`; zoom hand-rolled (precedente breadcrumb); relacionados al grid 2-col del listado.
 
-**Fuera de alcance (Spec §9):** Stripe/checkout, cantidades, cambios a Strapi. **Diferido a Fase 7:** `next/image` en `ProductImageMiniature`; `components/icon-button.tsx` quedó sin uso (orphan tras Task 4).
+**Fuera de alcance / diferido a Fase 7:** `ProductImageMiniature` (`<img>` en cart/favoritos), `components/icon-button.tsx` (orphan de Fase 5), rename `carousel-product.tsx`→`product-gallery.tsx`.
 
-**Open questions:** cantidades, límite de URL WhatsApp, renombrar `/cart` → `/mi-pedido`.
+**Open questions:** ¿hacer el zoom (Task 3) o recortarlo? · aspect ratio `square` vs `4/3` · rename del archivo de galería.

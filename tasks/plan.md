@@ -1,166 +1,133 @@
-# Implementation Plan — Fase 5: Conversión (WhatsApp + "Mi pedido")
+# Implementation Plan — Fase 6: Detalle de producto (galería)
 
-> Deriva de `Spec.md` → sección 11, Fase 5. Cubre **RF-12 a RF-16**: formalizar WhatsApp como canal de compra con mensajes prellenados, convertir el carrito muerto en **"Mi pedido" multi-producto → un único mensaje de WhatsApp**, y dejar favoritos + pedido coherentes y accesibles.
+> Deriva de `Spec.md` → sección 11, Fase 6. Cubre **RF-26 a RF-28**: galería mejorada (`next/image`, thumbnails y/o zoom, navegación clara), jerarquía de info y relacionados con el card unificado.
 > **Read-only plan.** La implementación es responsabilidad de `/g-build`.
-> Fases 1 (design system), 2 (product card), 3 (header/nav) y 4 (listado/categoría) ya completas — ver git log de `redesign/phase-1-design-foundations`.
+> Fases 1 (design system), 2 (product card), 3 (header/nav), 4 (listado/categoría) y 5 (conversión) ya completas — ver git log de `redesign/phase-1-design-foundations`.
 
 ## Overview
 
-La conversión real ocurre por **WhatsApp**, pero hoy ese camino está a medio cablear y con deuda:
+El detalle de producto ya tiene **la mitad de la Fase 6 hecha** por arrastre de fases anteriores:
 
-- `lib/whatsapp.ts` ya centraliza el mensaje **por producto** (`buildWhatsappUrl`) y el general (`buildGeneralWhatsappUrl`), y la **product card** ya usa el primero (Fase 2). Falta el mensaje **multi-ítem** para el pedido completo.
-- La página `/cart` es un **checkout muerto**: título "Carrito de compras", suma `price` (menudeo) como "Total de la orden" y un botón **"Comprar" → `console.log`**. No envía nada por WhatsApp.
-- `loved-products/page.tsx` e `info-product.tsx` **arman la URL de WhatsApp a mano** (`phoneNumber` hardcodeado, `bg-green-600` fuera del token `--whatsapp`, `Array.map` sin formato → `productName,productName`). `info-product` además tiene el botón "Comprar" muerto comentado y NO ofrece "Agregar a mi pedido".
-- La **product card** no tiene CTA "Agregar a mi pedido" (solo "Pedir" directo + favorito); el store `useCart` existe y el navbar ya cuenta sus ítems, pero nada lo llena salvo código muerto comentado.
-- El navbar arma su propio `openWhatsapp` hardcodeado en vez de usar el helper.
+- **RF-27 (jerarquía de info + CTAs)** ya se resolvió en Fase 5 (Task 4 `info-product.tsx`): nombre + categoría + **precios mayorista-first** + descripción + CTAs WhatsApp/"Agregar a mi pedido"/favorito-toggle. Esta fase **no lo re-implementa**, solo lo conserva.
+- **RF-28 (relacionados con card unificado)** ya usa `ProductCard` (`related-products-server.tsx`). Falta solo **alinear su grid** al patrón compacto 2-col mobile del listado (hoy arranca en `grid-cols-1`) y al espaciado del design system.
 
-Esta fase **formaliza el embudo**: un único helper de mensaje multi-ítem (puro, testeado), `/cart` rediseñada como **"Mi pedido"** que envía todos los ítems por WhatsApp, CTA "Agregar a mi pedido" en card y detalle, favoritos coherente con el design system y enviable por WhatsApp, y limpieza del WhatsApp hardcodeado restante. Sin tocar Strapi ni Stripe (queda fuera de alcance, Spec §9).
+Lo que **falta de verdad** es la **galería (RF-26)**, que es el último resto de deuda visual y de performance:
+
+- `carousel-product.tsx` usa **`<img>` nativo** (no `next/image`) → impacto en LCP/CLS (RNF-1), sin `sizes` ni contenedor de aspecto fijo.
+- **Sin thumbnails**: en productos con varias imágenes solo se navega con flechas; no hay vista de conjunto ni acceso directo a una imagen.
+- **Sin zoom**: no se puede ver el detalle de la imagen (relevante para artículos de limpieza: etiquetas, presentación).
+- **Sin placeholder de marca** cuando el producto no tiene imágenes (Spec §8: `return null` actual → galería vacía/rota).
+- El **skeleton** (`skeleton-product.tsx`) usa tamaños en px fijos que no matchean el layout 2-col real ni los tokens del sistema.
+
+Esta fase reconstruye la galería sobre el carousel embla ya disponible (sin nuevas dependencias): `next/image` + contenedor de aspecto + placeholder, thumbnails sincronizados, zoom hand-rolled (sin radix-dialog), y deja skeleton/relacionados consistentes.
 
 ## Architecture Decisions
 
-- **Un solo constructor de mensajes en `lib/whatsapp.ts`:** agregar `buildOrderWhatsappUrl(items, { baseUrl?, intro? })` — función **pura y testeada** (node:test, igual que Fase 2/4) que arma **un único** `wa.me` con todos los ítems en formato legible (nombre · precio mayoreo-first · link). Favoritos y "Mi pedido" la reusan con distinto `intro` → cero duplicación, cero teléfonos hardcodeados. Centraliza el formato exigido por el edge case "muchos ítems / límite de URL" (Spec §8).
-- **"Mi pedido" = el store de carrito reusado, SIN cantidades:** `useCart` ya es una lista dedup de `ProductType` (1 por producto) con `persist`. RF-14 dice "cantidad **si aplica**"; agregar cantidades implica cambiar el shape del store + steppers en UI = scope mayor y riesgo de regresión en el contador del navbar. **Decisión:** mantener el modelo 1-por-producto en esta fase (sin deuda: el helper acepta `quantity?` opcional para no cerrar la puerta). Cantidades quedan como Open Question.
-- **Ruta interna `/cart` se mantiene; el copy es "Mi pedido":** renombrar la ruta obligaría redirects y tocar navbar/footer/links por un beneficio cosmético. Se conserva `app/(routes)/cart` y se cambia solo el texto visible y la semántica (envío WhatsApp en vez de checkout). El navbar ya rotula el ícono "Mi pedido".
-- **Verde solo WhatsApp, vía token (RN-2):** todos los CTAs de envío pasan a `bg-whatsapp text-whatsapp-foreground` (se elimina el `bg-green-600` hardcodeado de `loved-products` e `info-product`).
-- **Mayorista-first en todo el embudo (RN-1):** `cart-item`, la página de pedido y `info-product` muestran el **mayoreo protagonista** y el menudeo secundario, vía `formatPrice` (que ya devuelve `null` → "Consultar"). Se elimina el "Total de la orden" (no aplica a un pedido-consulta por WhatsApp; los precios mayoreo/menudeo conviven y el cierre es por chat).
-- **Estados vacíos con el componente compartido:** se reusa `components/listing/empty-state.tsx` (Fase 4) para "Mi pedido vacío" y "Sin favoritos" con CTA a explorar (Spec §8).
-- **`next/image` en miniaturas queda para Fase 7:** `ProductImageMiniature` usa `<img>`; está listado explícitamente en la limpieza de Fase 7. No se toca aquí para no mezclar concerns (disciplina de scope).
-- **Verificación:** `npm test` (suite node:test, suma casos de `buildOrderWhatsappUrl`) + `npx tsc --noEmit` + `npx next lint` + `next build` (compilación) + visual con `npm run dev` + backend Strapi.
+- **Reutilizar el carousel embla existente (`components/ui/carousel.tsx`), cero deps nuevas (RNF-5):** ya expone `setApi` → da acceso a la API embla para sincronizar thumbnails (`scrollTo`, `selectedScrollSnap`, evento `select`). No se agrega `embla-carousel-react` extra ni librerías de lightbox.
+- **`next/image` con contenedor de aspecto fijo (RNF-1):** la imagen principal pasa a `Image fill object-contain` dentro de un contenedor con relación de aspecto estable (p. ej. `aspect-square`/`aspect-[4/3]`) → elimina CLS y mejora LCP. La primera imagen marca `priority`. `sizes` acorde al layout 2-col del detalle.
+- **Placeholder de marca cuando no hay imágenes (Spec §8):** función pura y testeable que normaliza `images` (filtra vacíos / cae a placeholder) → la galería nunca renderiza `null` ni un `<img>` roto. Único punto con TDD real de la fase (`lib/gallery.ts` o helper colocalizado + test node:test).
+- **Thumbnails sincronizados bidireccionalmente:** click en thumb → `api.scrollTo(i)`; `select` de embla → resalta el thumb activo y hace scroll del thumb a la vista. Si hay **una sola imagen**, no se renderiza la tira de thumbnails (evita ruido).
+- **Zoom hand-rolled sin radix-dialog (RNF-5):** overlay propio (precedente: breadcrumb hand-authored de Fase 4) — `fixed inset-0` con backdrop, imagen ampliada, cierre por botón / click-outside / `Esc`, `aria-modal` + foco. RF-26 pide thumbnails **y/o** zoom: con thumbnails ya se cumple el mínimo, así que el zoom es **mejora opcional** (ver Open Questions) — se implementa simple, sin pan/zoom-gestures.
+- **Relacionados alineados al listado (RF-28/24):** el grid de `related-products-server.tsx` adopta `grid-cols-2 ... xl:grid-cols-5` + gaps del listado, para densidad consistente en mobile. Sigue usando `ProductCard` (ya `next/image`).
+- **Galería como componente client aislado:** la lógica de thumbnails/zoom (estado, `setApi`) vive en el componente de galería (`carousel-product.tsx`, se conserva el nombre de archivo para minimizar churn); `page.tsx` (server) solo le pasa `images` + `productName`. No se toca el fetch/ISR.
+- **Verificación:** `npm test` (suma el test del helper de placeholder) + `npx tsc --noEmit` + `npx next lint` + `next build` (compilación). Lo visual/runtime de la galería (LCP, sin CLS, navegación, zoom) se valida con `npm run dev` + backend y **Chrome DevTools** (skill `google-browser-testing-with-devtools`): consola limpia, screenshot, thumbnails y zoom funcionando.
 
 ## Grafo de dependencias
 
 ```
-Task 1 (helper buildOrderWhatsappUrl + tests)   ← foundation, pura/testeable
+Task 1 (next/image + aspecto + placeholder)   ← base de la galería (incl. helper testeable)
         │
-        ├──────────────► Task 2 (/cart → "Mi pedido" + envío WhatsApp)
+        ├──────────────► Task 2 (thumbnails sincronizados)
         │                         │
-Task 3 (CTA "Agregar a mi pedido" en product card) ─┘  (llena el pedido)
-        │
-        ├──────────────► Task 4 (detalle: CTAs WhatsApp + agregar + favorito toggle)
-        │
-        └──────────────► Task 5 (favoritos rediseñada + WhatsApp + mover a pedido)
-
-Task 6 (navbar: WhatsApp por helper + coherencia copy) ← independiente, cierre
+        └──────────────► Task 3 (zoom hand-rolled)   ← opcional, sobre la galería
+                                  │
+Task 4 (skeleton + relacionados alineados)  ← soporte, independiente del 2/3
 ```
 
-Orden: helper primero (todo lo demás lo consume), luego destino del pedido (`/cart`), luego los orígenes que lo llenan (card, detalle), favoritos, y limpieza final del navbar.
+Orden: primero la imagen principal correcta (next/image + placeholder, ya shippable), luego thumbnails, luego zoom (opcional), y por último el pulido de skeleton/relacionados.
 
 ---
 
 ## Task List
 
-### Phase 5A — Fundación de conversión
+### Phase 6A — Galería
 
-#### Task 1 — Helper de mensaje multi-ítem (`buildOrderWhatsappUrl`) — S
+#### Task 1 — Imagen principal con `next/image`, aspecto fijo y placeholder — M
 
-**Descripción:** Agregar a `lib/whatsapp.ts` una función pura que arme **un único** enlace `wa.me` a partir de una lista de productos, en formato legible y mayorista-first, reusable por "Mi pedido" y favoritos.
+**Descripción:** Migrar la imagen principal de la galería de `<img>` a `next/image` dentro de un contenedor de aspecto estable, con `priority` en la primera, `sizes` acorde al layout, y un **placeholder de marca** cuando el producto no tiene imágenes (vía helper puro testeable).
 
 **Criterios de aceptación:**
-- [ ] `buildOrderWhatsappUrl(items, options?)` donde `items: { productName: string; slug: string; price_mayoreo?: number|null; price?: number|null; quantity?: number }[]` y `options?: { baseUrl?: string; intro?: string }`.
-- [ ] Devuelve `https://wa.me/${WHATSAPP_PHONE}?text=...` con `intro` (default tipo "Hola, quiero hacer este pedido:") seguido de una línea por ítem: nombre + precio (mayoreo si existe, si no menudeo, vía `formatPrice`) + link al producto si hay `baseUrl`.
-- [ ] Si `items` está vacío, devuelve una URL válida con un mensaje genérico (no rompe).
-- [ ] Todo el texto va `encodeURIComponent`. Sin teléfonos hardcodeados (usa `WHATSAPP_PHONE`).
+- [ ] La imagen principal usa `Image` (`fill`, `object-contain`) en un contenedor con relación de aspecto fija (sin CLS); primera imagen `priority`, con `sizes` acorde a 2-col del detalle.
+- [ ] Producto sin imágenes → placeholder de marca (no `null`, no `<img>` roto). Helper puro normaliza `images` (filtra vacíos / fallback).
+- [ ] Sin `<img>` nativo en la imagen principal; sin `dark:`; usa tokens del sistema.
 
 **Verificación:**
-- [ ] `npm test` — nuevos casos en `lib/whatsapp.test.ts`: apunta al teléfono; incluye los nombres de **todos** los ítems; usa mayoreo cuando existe y cae a menudeo cuando no; incluye links con `baseUrl`; lista vacía → URL válida; `intro` personalizado se codifica.
-- [ ] `npx tsc --noEmit`, `npx next lint`.
+- [ ] `npm test` — nuevos casos del helper: lista normal se devuelve igual; lista vacía/`null`/imágenes sin `url` → fallback de placeholder.
+- [ ] `npx tsc --noEmit`, `npx next lint`, `next build` (compilación).
+- [ ] Manual/DevTools: imagen nítida sin salto de layout; producto sin imágenes muestra placeholder.
 
 **Dependencias:** Ninguna.
-**Archivos:** `lib/whatsapp.ts`, `lib/whatsapp.test.ts`. — **Scope: S**
+**Archivos:** `app/(routes)/product/[productSlug]/components/carousel-product.tsx`, helper nuevo (`lib/gallery.ts` + `lib/gallery.test.ts`), opcional `page.tsx` (sizes/layout). — **Scope: M**
 
-#### Task 2 — `/cart` → "Mi pedido" con envío por WhatsApp — M
+#### Task 2 — Thumbnails sincronizados con la imagen principal — M
 
-**Descripción:** Rediseñar la página del carrito como **"Mi pedido"**: lista de ítems con design system, estado vacío con CTA, y botón "Enviar pedido por WhatsApp" que usa `buildOrderWhatsappUrl`. Eliminar el checkout muerto ("Total de la orden" + "Comprar" → `console.log`).
+**Descripción:** Agregar una tira de thumbnails (`next/image`) debajo de la imagen principal, sincronizada con el carousel embla vía `setApi`: click en thumb mueve la principal, el thumb activo se resalta. Se oculta si hay una sola imagen.
 
 **Criterios de aceptación:**
-- [ ] Título y copy "Mi pedido"; precios mayorista-first en `cart-item` (mayoreo protagonista, menudeo secundario, `formatPrice`).
-- [ ] Pedido vacío → `EmptyState` con CTA a `/products`. Se elimina el bloque "Resumen de la compra"/"Comprar"/`console.log` y la suma de menudeo como total.
-- [ ] Botón "Enviar pedido por WhatsApp" (`bg-whatsapp`) que abre `buildOrderWhatsappUrl(items, { baseUrl, intro })`; deshabilitado/oculto si el pedido está vacío. Opción "Vaciar pedido" (`removeAll`).
-- [ ] `cart-item` con botón de eliminar accesible (`<button aria-label>`, no `onClick` en el ícono `X`).
-- [ ] Guard de hydration para leer el store persistido (patrón ya usado en navbar/card).
+- [ ] Tira de thumbnails (`next/image`) bajo la principal; click → `api.scrollTo(i)`.
+- [ ] El thumb del slide activo se resalta (borde/anillo con token `--primary`) y se actualiza con el evento `select` de embla y con las flechas.
+- [ ] Con una sola imagen no se renderiza la tira. Thumbnails accesibles (`button aria-label`).
+- [ ] Sin loops de re-render (suscripción/limpieza correcta al `select`).
 
 **Verificación:**
-- [ ] `npm test` (sin regresiones), `npx tsc --noEmit`, `npx next lint`, `next build` (compilación).
-- [ ] Manual: agregar ítems → `/cart` los lista → "Enviar" abre WhatsApp con todos; vaciar y pedido-vacío muestran estado correcto.
+- [ ] `npx tsc --noEmit`, `npx next lint`, `next build` (compilación); `npm test` sin regresiones.
+- [ ] Manual/DevTools: click en thumbs cambia la principal y resalta; flechas actualizan el thumb activo; consola limpia.
 
 **Dependencias:** Task 1.
-**Archivos:** `app/(routes)/cart/page.tsx`, `app/(routes)/cart/components/cart-item.tsx`. — **Scope: M**
+**Archivos:** `app/(routes)/product/[productSlug]/components/carousel-product.tsx`. — **Scope: M**
 
-### Checkpoint A — Pedido enviable
+### Checkpoint A — Galería navegable y performante
 - [ ] `npm test` verde, build compila.
-- [ ] El usuario puede ver "Mi pedido" y enviarlo por WhatsApp como un solo mensaje.
+- [ ] La imagen principal es `next/image` sin CLS, con thumbnails que navegan; placeholder cuando no hay imágenes.
 
-### Phase 5B — Orígenes del pedido y coherencia
+### Phase 6B — Zoom y soporte
 
-#### Task 3 — CTA "Agregar a mi pedido" en product card — S
+#### Task 3 — Zoom de imagen (overlay hand-rolled, opcional) — M
 
-**Descripción:** Sumar a la product card el botón "Agregar a mi pedido" (`useCart.addItem`), conservando "Pedir por WhatsApp" directo y el favorito. Mantener la card compacta en mobile (2-col).
+**Descripción:** Permitir ampliar la imagen principal en un overlay propio (sin radix-dialog): click o botón "ampliar" abre `fixed inset-0` con backdrop e imagen grande; cierre por botón, click-outside y `Esc`.
 
 **Criterios de aceptación:**
-- [ ] Botón "Agregar a mi pedido" (ícono carrito) que llama `addItem(product)`; el toast y la dedup ya los provee el store; el contador del navbar refleja el alta.
-- [ ] Layout compacto coherente con Fase 2/4 (no rompe el grid de 2 columnas mobile); sin `dark:`, usando Button/tokens.
-- [ ] Sin hydration mismatch (la card ya monta-guard para favoritos).
+- [ ] Click en la imagen principal (o botón "ampliar") abre el overlay con la imagen actual en grande (`next/image`, `object-contain`).
+- [ ] Cierre por botón ✕, click en backdrop y tecla `Esc`; `role="dialog"`/`aria-modal`, foco gestionado, scroll del body bloqueado mientras está abierto.
+- [ ] Sin nuevas dependencias; tokens del sistema; sin `dark:`.
 
 **Verificación:**
 - [ ] `npx tsc --noEmit`, `npx next lint`, `next build` (compilación); `npm test` sin regresiones.
-- [ ] Manual: click agrega al pedido y el contador del navbar sube; reagregar muestra el toast de "ya está".
+- [ ] Manual/DevTools: abre/cierra por los 3 medios; `Esc` y click-outside funcionan; consola limpia.
 
-**Dependencias:** Task 2 (destino del pedido listo).
-**Archivos:** `components/shared/product-card.tsx`. — **Scope: S**
+**Dependencias:** Task 1 (opcionalmente Task 2 para abrir desde la imagen activa).
+**Archivos:** `app/(routes)/product/[productSlug]/components/carousel-product.tsx` (+ posible `image-zoom.tsx` colocalizado). — **Scope: M**
 
-#### Task 4 — Detalle de producto: CTAs de conversión formalizados — M
+#### Task 4 — Skeleton y relacionados alineados al design system — S
 
-**Descripción:** En `info-product.tsx`, reemplazar el WhatsApp hardcodeado por `buildWhatsappUrl`, agregar "Agregar a mi pedido" (`addItem`), convertir el favorito en **toggle** (add/remove con estado), y aplicar jerarquía de precios mayorista-first. (La galería/zoom RF-26 es Fase 6; aquí solo el bloque de conversión y precios.)
+**Descripción:** Actualizar `skeleton-product.tsx` para que matchee el layout real 2-col (galería + info) con tokens y aspecto, y alinear el grid de `related-products-server.tsx` al patrón compacto 2-col mobile del listado.
 
 **Criterios de aceptación:**
-- [ ] CTA WhatsApp usa `buildWhatsappUrl(product, baseUrl)` con `bg-whatsapp` (sin `green-600` ni teléfono hardcodeado).
-- [ ] Botón "Agregar a mi pedido" (`addItem`) visible; se elimina el bloque "Comprar" comentado muerto.
-- [ ] Favorito = toggle con estado montado (add/remove, `aria-pressed`, corazón relleno), consistente con la card.
-- [ ] Precios mayorista-first (mayoreo protagonista, menudeo secundario, `formatPrice` con "Consultar" si falta).
+- [ ] Skeleton refleja el layout 2-col (bloque de galería con aspecto + tira de thumbs + líneas de info y CTAs), sin tamaños px arbitrarios que descuadren.
+- [ ] Grid de relacionados usa `grid-cols-2 ... xl:grid-cols-5` + gaps del listado; título con `font-display` y espaciado consistente.
+- [ ] Sin `dark:`; usa `Skeleton` y tokens.
 
 **Verificación:**
 - [ ] `npx tsc --noEmit`, `npx next lint`, `next build` (compilación); `npm test` sin regresiones.
-- [ ] Manual: en detalle, WhatsApp prellena el producto; "Agregar a mi pedido" sube el contador; el corazón togglea.
+- [ ] Manual/DevTools: el skeleton no “salta” al cargar; relacionados en 2-col mobile como el listado.
 
-**Dependencias:** Task 1, Task 3 (patrón de "agregar").
-**Archivos:** `app/(routes)/product/[productSlug]/components/info-product.tsx`. — **Scope: M**
+**Dependencias:** Task 1 (para que el skeleton matchee la galería final). Independiente de Task 2/3.
+**Archivos:** `app/(routes)/product/[productSlug]/components/skeleton-product.tsx`, `app/(routes)/product/[productSlug]/components/related-products-server.tsx`. — **Scope: S**
 
-#### Task 5 — Favoritos rediseñada + WhatsApp + mover a pedido — M
-
-**Descripción:** Rediseñar `loved-products/page.tsx` con el design system: estado vacío con CTA, consulta por WhatsApp vía `buildOrderWhatsappUrl` (intro de favoritos), y por ítem "Agregar a mi pedido" además de quitar. Limpiar el WhatsApp hardcodeado y `bg-green-600`.
-
-**Criterios de aceptación:**
-- [ ] Sin favoritos → `EmptyState` con CTA a `/products`. Copy y estilos con tokens (no `green-600`, no map crudo).
-- [ ] Botón "Consultar por WhatsApp" usa `buildOrderWhatsappUrl(lovedItems, { baseUrl, intro: "..." })`.
-- [ ] Cada `loved-item-product` permite "Agregar a mi pedido" (`addItem`) y "Quitar" (`removeLovedItem`) con botones accesibles; precios mayorista-first.
-- [ ] Guard de hydration para el store persistido.
-
-**Verificación:**
-- [ ] `npx tsc --noEmit`, `npx next lint`, `next build` (compilación); `npm test` sin regresiones.
-- [ ] Manual: favoritos lista, "Consultar" abre WhatsApp con todos, "Agregar a mi pedido" mueve al pedido, vacío muestra estado.
-
-**Dependencias:** Task 1, Task 3.
-**Archivos:** `app/(routes)/loved-products/page.tsx`, `app/(routes)/loved-products/components/loved-item-product.tsx`. — **Scope: M**
-
-#### Task 6 — Navbar: WhatsApp por helper + coherencia de copy — XS
-
-**Descripción:** Reemplazar el `openWhatsapp` hardcodeado del navbar por `buildGeneralWhatsappUrl` (como el FAB) y verificar coherencia del acceso "Mi pedido"/favoritos con contador (RF-19).
-
-**Criterios de aceptación:**
-- [ ] El botón de WhatsApp del navbar usa `buildGeneralWhatsappUrl` (sin teléfono/mensaje hardcodeados).
-- [ ] Accesos a favoritos y "Mi pedido" con contador siguen funcionando (sin regresión del guard de hydration).
-
-**Verificación:**
-- [ ] `npx tsc --noEmit`, `npx next lint`, `next build` (compilación); `npm test` sin regresiones.
-- [ ] Manual: el ícono de WhatsApp del header abre el mismo destino que el FAB.
-
-**Dependencias:** Ninguna (puede ir al final).
-**Archivos:** `components/navbar.tsx`. — **Scope: XS**
-
-### Checkpoint B — Embudo de conversión completo
-- [ ] Todos los CTAs (card, detalle, favoritos, pedido, navbar, FAB) usan los helpers centralizados; cero WhatsApp hardcodeado.
-- [ ] Flujo end-to-end: descubrir → agregar a pedido → enviar pedido por WhatsApp; y descubrir → favorito → consultar/mover a pedido.
-- [ ] `npm test` verde, build compila, lint limpio.
+### Checkpoint B — Detalle completo
+- [ ] Galería con `next/image` + thumbnails (+ zoom), placeholder, skeleton y relacionados consistentes con el design system.
+- [ ] Flujo end-to-end del detalle: ver imágenes (navegar/ampliar) → precios mayorista-first → CTAs de conversión → relacionados.
+- [ ] `npm test` verde, build compila, lint limpio. Validación visual con DevTools registrada.
 
 ---
 
@@ -168,14 +135,15 @@ Orden: helper primero (todo lo demás lo consume), luego destino del pedido (`/c
 
 | Riesgo | Impacto | Mitigación |
 |---|---|---|
-| URL de WhatsApp demasiado larga con muchos ítems | Medio | Formato compacto (una línea por ítem); `buildOrderWhatsappUrl` testeado; evaluar truncado/aviso si crece (Open Question). |
-| Hydration mismatch al leer `useCart`/`useLovedProducts` persistidos | Medio | Reusar el patrón `mounted` ya probado en navbar/card en todas las páginas client nuevas. |
-| Scope creep hacia cantidades o checkout | Medio | Decisión explícita: sin cantidades, sin Stripe (Spec §9); helper deja `quantity?` abierto sin implementarlo. |
-| Mezclar la galería del detalle (Fase 6) | Bajo | Task 4 toca solo el bloque de conversión/precios de `info-product`, no la galería. |
+| Loop de re-render al sincronizar thumbnails con embla | Medio | Suscribir/desuscribir `select` en `useEffect` con cleanup; derivar el índice activo del estado de embla, no de props. |
+| CLS por imágenes de alto variable | Medio | Contenedor de aspecto fijo + `fill object-contain`; `sizes` correcto. |
+| Tentación de agregar radix-dialog / lib de lightbox/zoom | Bajo | Overlay hand-rolled (precedente breadcrumb Fase 4); RNF-5. |
+| `next/image` con dominios de Strapi no configurados | Medio | El proyecto ya usa `next/image` con Strapi en el card (Fases 2/4) → `next.config` ya habilita el host; reutilizar el mismo patrón de `url`. |
+| Scope creep hacia pan/zoom con gestos o fullscreen API | Bajo | Zoom mínimo (overlay + object-contain); gestos quedan fuera. |
 
 ## Open Questions
 
-- **Cantidades en "Mi pedido"** (RF-14 "si aplica"): ¿se necesitan steppers de cantidad o alcanza 1-por-producto? Default actual: 1-por-producto.
-- **Límite de URL de WhatsApp**: si un pedido es enorme, ¿truncar con "...y N ítems más" o avisar? Default: enviar completo.
-- **Ruta `/cart`**: ¿renombrar a `/mi-pedido` por SEO/claridad o mantener? Default: mantener (solo cambia el copy).
-- **`next/image` en miniaturas**: se difiere a Fase 7 (limpieza) junto con el resto de `<img>`.
+- **Zoom (Task 3) ¿se hace?** RF-26 pide thumbnails **y/o** zoom; con Task 2 ya se cumple. Default: implementarlo simple por valor en limpieza (etiquetas), pero es el candidato a recortar si se prefiere cerrar la fase antes.
+- **Aspect ratio de la imagen principal:** ¿`square` o `4/3`? Default sugerido: `aspect-square` con `object-contain` (consistente con el card). A validar visualmente.
+- **Rename `carousel-product.tsx` → `product-gallery.tsx`:** más descriptivo ahora que tiene thumbnails+zoom. Default: mantener el nombre para minimizar churn (se puede renombrar en Fase 7).
+- **`ProductImageMiniature` (`<img>` en cart/favoritos):** sigue diferido a Fase 7 (limpieza), no entra acá.
