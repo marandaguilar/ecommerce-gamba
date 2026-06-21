@@ -1,13 +1,18 @@
 "use client";
 
-import { Heart, MessageCircle, Plus } from "lucide-react";
+import { useState } from "react";
+import { Heart, MessageCircle, Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { getPrimaryPricing } from "@/lib/pricing";
+import { getDefaultUnit, getProductUnits, unitLabel } from "@/lib/units";
 import { cn } from "@/lib/utils";
 import { buildWhatsappUrl, getBaseUrl, openWhatsapp } from "@/lib/whatsapp";
-import { ProductType } from "@/types/product";
+import { ProductType, SaleUnit } from "@/types/product";
 import { useLovedProducts } from "@/hooks/use-loved-products";
 import { useCart } from "@/hooks/use-cart";
 import { useMounted } from "@/hooks/use-mounted";
@@ -28,6 +33,27 @@ const InfoProduct = (props: InfoProductProps) => {
 
   const { primaryPrice, primaryLabel, secondaryPrice } =
     getPrimaryPricing(product);
+
+  // Unidades de venta del producto (puede no tener ninguna configurada).
+  const units = getProductUnits(product);
+  const hasUnits = units.length > 0;
+  const [selectedUnit, setSelectedUnit] = useState<SaleUnit | null>(() =>
+    getDefaultUnit(product)
+  );
+  const [quantity, setQuantity] = useState(1);
+
+  const handleQuantityChange = (value: string) => {
+    const parsed = parseInt(value, 10);
+    setQuantity(Number.isFinite(parsed) && parsed >= 1 ? parsed : 1);
+  };
+
+  const handleAddToCart = () => {
+    if (hasUnits) {
+      addItem(product, { unidad: selectedUnit, cantidad: quantity });
+    } else {
+      addItem(product);
+    }
+  };
 
   const handleWhatsapp = () => {
     openWhatsapp(buildWhatsappUrl(product, getBaseUrl()));
@@ -74,6 +100,78 @@ const InfoProduct = (props: InfoProductProps) => {
         )}
       </div>
 
+      {/* Selección de unidad y cantidad (solo si el producto tiene unidades) */}
+      {hasUnits && (
+        <div className="mb-6 flex flex-col gap-4">
+          <div>
+            <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
+              Unidad
+            </p>
+            <RadioGroup
+              value={selectedUnit ?? undefined}
+              onValueChange={(value) => setSelectedUnit(value as SaleUnit)}
+              className="flex flex-wrap gap-2"
+            >
+              {units.map((unit) => (
+                <Label
+                  key={unit}
+                  htmlFor={`unit-${unit}`}
+                  className={cn(
+                    "flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm capitalize transition",
+                    selectedUnit === unit
+                      ? "border-primary bg-primary/5"
+                      : "border-input hover:bg-muted"
+                  )}
+                >
+                  <RadioGroupItem id={`unit-${unit}`} value={unit} />
+                  {unitLabel(unit, true)}
+                </Label>
+              ))}
+            </RadioGroup>
+          </div>
+
+          <div>
+            <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
+              Cantidad
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                aria-label="Disminuir cantidad"
+              >
+                <Minus className="size-4" />
+              </Button>
+              <Input
+                type="number"
+                min={1}
+                inputMode="numeric"
+                value={quantity}
+                onChange={(event) => handleQuantityChange(event.target.value)}
+                className="w-20 text-center"
+                aria-label="Cantidad"
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                onClick={() => setQuantity((q) => q + 1)}
+                aria-label="Aumentar cantidad"
+              >
+                <Plus className="size-4" />
+              </Button>
+              {selectedUnit && (
+                <span className="text-sm text-muted-foreground">
+                  {unitLabel(selectedUnit, quantity !== 1)}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* CTAs de conversión */}
       <div className="flex flex-col gap-3">
         <Button
@@ -88,7 +186,7 @@ const InfoProduct = (props: InfoProductProps) => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => addItem(product)}
+            onClick={handleAddToCart}
             className="flex-1"
           >
             <Plus className="size-4" />
