@@ -1,21 +1,22 @@
 import { notFound } from "next/navigation";
-import { getCategoryBySlug, getCategoryProducts } from "@/lib/data/strapi";
-import CategoryClientWrapper from "./components/category-client-wrapper";
+
+import { getCategoryBySlug, getProducts } from "@/lib/data/strapi";
+import { loadListingParams } from "@/lib/listing-params";
+import ProductListing from "@/components/listing/product-listing";
 
 interface PageProps {
-  params: Promise<{
-    categorySlug: string;
-  }>;
+  params: Promise<{ categorySlug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
+
+const PAGE_SIZE = 24;
 
 export async function generateMetadata({ params }: PageProps) {
   const { categorySlug } = await params;
   const category = await getCategoryBySlug(categorySlug);
 
   if (!category) {
-    return {
-      title: "Categoría no encontrada | Gamba",
-    };
+    return { title: "Categoría no encontrada | Gamba" };
   }
 
   return {
@@ -24,30 +25,33 @@ export async function generateMetadata({ params }: PageProps) {
   };
 }
 
-export default async function CategoryPage({ params }: PageProps) {
+export default async function CategoryPage({ params, searchParams }: PageProps) {
   const { categorySlug } = await params;
+  const { page, search, sort, offer } = await loadListingParams(searchParams);
 
-  // Fetch category and products server-side
-  const [category, initialProducts] = await Promise.all([
-    getCategoryBySlug(categorySlug),
-    getCategoryProducts(categorySlug, 50), // Fetch 50 products initially (increased for better search)
-  ]);
-
+  const category = await getCategoryBySlug(categorySlug);
   if (!category) {
     notFound();
   }
 
+  // Fuente única de datos: getProducts con categoryId (pagina todo,
+  // resuelve el bug del tope de 50 del modelo client-side anterior).
+  const res = await getProducts({
+    page: Math.max(1, page),
+    pageSize: PAGE_SIZE,
+    search: search.trim() || undefined,
+    sort,
+    categoryId: category.id,
+    isRebaja: offer || undefined,
+  });
+
   return (
-    <div className="max-w-[1600px] py-10 mx-auto sm:px-8 px-4">
-      {/* Client wrapper handles search and "load more" functionality */}
-      <CategoryClientWrapper
-        initialProducts={initialProducts}
-        categorySlug={categorySlug}
-        categoryName={category.categoryName}
-      />
-    </div>
+    <ProductListing
+      title={category.categoryName}
+      breadcrumbCurrent={category.categoryName}
+      products={res.data}
+      pageCount={res.meta.pagination?.pageCount ?? 1}
+      total={res.meta.pagination?.total ?? res.data.length}
+    />
   );
 }
-
-// ISR: Revalidate every 1 hour
-export const revalidate = 3600;

@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 
+import { CategoryType } from "@/types/category";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -13,28 +14,32 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 
-const MenuList = () => {
+interface MenuListProps {
+  categories: CategoryType[];
+}
+
+const MenuList = ({ categories }: MenuListProps) => {
   return (
     <NavigationMenu viewport={false}>
       <NavigationMenuList>
-        <NavigationMenuItem>
-          <NavigationMenuTrigger className="text-md">
-            Categorias
-          </NavigationMenuTrigger>
-          <NavigationMenuContent>
-            <ul className="grid w-[400px] gap-2 md:w-[300px] md:grid-cols-1 lg:w-[300px]">
-              {components.map((component) => (
-                <ListItem
-                  key={component.title}
-                  title={component.title}
-                  href={component.href}
-                >
-                  {component.description}
-                </ListItem>
-              ))}
-            </ul>
-          </NavigationMenuContent>
-        </NavigationMenuItem>
+        {categories.length > 0 && (
+          <NavigationMenuItem>
+            <NavigationMenuTrigger className="text-md">
+              Categorias
+            </NavigationMenuTrigger>
+            <NavigationMenuContent>
+              <ul className="grid w-[300px] gap-2 md:grid-cols-1">
+                {categories.map((category) => (
+                  <ListItem
+                    key={category.id}
+                    title={category.categoryName}
+                    href={`/category/${category.slug}`}
+                  />
+                ))}
+              </ul>
+            </NavigationMenuContent>
+          </NavigationMenuItem>
+        )}
         <NavigationMenuItem>
           <NavigationMenuLink
             asChild
@@ -58,37 +63,8 @@ const MenuList = () => {
 
 export default MenuList;
 
-const components: { title: string; href: string; description: string }[] = [
-  {
-    title: "Utensilios",
-    href: "/category/utensilios",
-    description: "Escobas, trapeadores, cubetas, etc.",
-  },
-  {
-    title: "Quimicos",
-    href: "/category/quimicos",
-    description: "Cloro, Fabuloso, pastillas de cloro, etc.",
-  },
-  {
-    title: "Fibras",
-    href: "/category/fibras",
-    description: "Esponjas, fibras metalicas, etc.",
-  },
-  {
-    title: "Papel",
-    href: "/category/papel",
-    description: "Papel, sanitas, etc.",
-  },
-  {
-    title: "Miscelaneos",
-    href: "/category/miscelaneos",
-    description: "Miscelaneos de limpieza.",
-  },
-];
-
 function ListItem({
   title,
-  children,
   href,
   ...props
 }: React.ComponentPropsWithoutRef<"li"> & { href: string }) {
@@ -97,9 +73,6 @@ function ListItem({
       <NavigationMenuLink asChild>
         <Link href={href}>
           <div className="text-sm leading-none font-medium">{title}</div>
-          <p className="text-muted-foreground line-clamp-2 text-sm leading-snug">
-            {children}
-          </p>
         </Link>
       </NavigationMenuLink>
     </li>

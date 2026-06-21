@@ -1,46 +1,77 @@
-"use client"
+"use client";
+
+import Link from "next/link";
+import { MessageCircle } from "lucide-react";
+
+import { useCart } from "@/hooks/use-cart";
+import { useMounted } from "@/hooks/use-mounted";
+import { buildOrderWhatsappUrl, getBaseUrl, openWhatsapp } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useCart } from "@/hooks/use-cart";
-import { formatPrice } from "@/lib/formatPrice";
+import EmptyState from "@/components/listing/empty-state";
 import CartItem from "./components/cart-item";
 
 export default function Page() {
-    const { items } = useCart()
+  const { items, removeAll } = useCart();
 
-    const prices = items.map((product) => product.price)
-    const totalPrice = prices.reduce((total, price) => total + price, 0)
-    
-    return (
-        <div className="max-w-6xl px-4 py-16 mx-auto lg:px-8 sm:px-6">
-            <h1 className="mb-5 text-3xl font-bold">Carrito de compras</h1>
-            <div className="grid grid-cols-2 sm:gap-5">
-                <div>
-                   {items.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-full">
-                        <p className="text-sm text-gray-500">No hay productos en el carrito</p>
-                    </div>
-                   )}
-                   <ul>
-                    {items.map((item) => (
-                        <CartItem key={item.id} product={item} />
-                    ))}
-                   </ul>
-                </div>
-                <div className="max-w-lg">
-                    <div className="p-6 rounded-lg bg-slate-100">
-                        <p className="mb-3 text-lg font-semibold">Resumen de la compra</p>
-                        <Separator />
-                        <div className="flex justify-between gap-5 my-4">
-                            <p>Total de la orden</p>
-                            <p>{formatPrice(totalPrice)}</p>
-                        </div>
-                        <div className="flex items-center justify-center w-full mt-3">
-                            <Button className="w-full text-white" onClick={() => console.log("Comprar")}>Comprar</Button>
-                        </div>
-                    </div>
-                </div>
+  // Guard de hydration: el pedido vive en localStorage (persist); solo se
+  // refleja tras montar para evitar mismatch servidor/cliente.
+  const mounted = useMounted();
+  const orderItems = mounted ? items : [];
+
+  const sendOrder = () => {
+    openWhatsapp(buildOrderWhatsappUrl(orderItems, { baseUrl: getBaseUrl() }));
+  };
+
+  return (
+    <div className="max-w-3xl px-4 py-16 mx-auto sm:px-6">
+      <h1 className="mb-6 font-display text-3xl font-bold">Mi pedido</h1>
+
+      {orderItems.length === 0 ? (
+        <EmptyState
+          title="Tu pedido está vacío"
+          description="Agregá productos a tu pedido y envialos juntos por WhatsApp."
+        >
+          <Button asChild className="mt-2">
+            <Link href="/products">Explorar productos</Link>
+          </Button>
+        </EmptyState>
+      ) : (
+        <>
+          <ul>
+            {orderItems.map((item) => (
+              <CartItem key={item.id} product={item} />
+            ))}
+          </ul>
+
+          <Separator className="my-6" />
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              {orderItems.length}{" "}
+              {orderItems.length === 1 ? "producto" : "productos"} en tu pedido
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={removeAll}
+                className="sm:order-1"
+              >
+                Vaciar pedido
+              </Button>
+              <Button
+                type="button"
+                onClick={sendOrder}
+                className="bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90 active:bg-whatsapp/80 sm:order-2"
+              >
+                <MessageCircle className="size-4" />
+                Enviar pedido por WhatsApp
+              </Button>
             </div>
-        </div>
-    )
+          </div>
+        </>
+      )}
+    </div>
+  );
 }

@@ -14,6 +14,7 @@ export type ProductType = {
     description: string
     active: boolean
     isFeatured: boolean | null
+    isRebaja: boolean | null
     purchase?: string
     price: number
     price_mayoreo: number

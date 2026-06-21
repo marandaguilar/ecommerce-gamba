@@ -1,12 +1,16 @@
 "use client";
 
-import IconButton from "@/components/icon-button";
+import { Heart, MessageCircle, Plus } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
-import { formatPrice } from "@/lib/formatPrice";
+import { Separator } from "@/components/ui/separator";
+import { getPrimaryPricing } from "@/lib/pricing";
+import { cn } from "@/lib/utils";
+import { buildWhatsappUrl, getBaseUrl, openWhatsapp } from "@/lib/whatsapp";
 import { ProductType } from "@/types/product";
-import { Separator } from "@radix-ui/react-separator";
-import { Heart, MessageCircle } from "lucide-react";
 import { useLovedProducts } from "@/hooks/use-loved-products";
+import { useCart } from "@/hooks/use-cart";
+import { useMounted } from "@/hooks/use-mounted";
 import ProductCategories from "@/components/shared/product-categories";
 
 export type InfoProductProps = {
@@ -14,17 +18,30 @@ export type InfoProductProps = {
 };
 
 const InfoProduct = (props: InfoProductProps) => {
-  const { product }: InfoProductProps = props;
-  // const { addItem } = useCart();
-  const { addLovedItem } = useLovedProducts();
+  const { product } = props;
+  const { addItem } = useCart();
+  const { lovedItems, toggleLovedItem } = useLovedProducts();
+
+  // Guard de hydration: el favorito vive en localStorage (persist).
+  const mounted = useMounted();
+  const isLoved = mounted && lovedItems.some((item) => item.id === product.id);
+
+  const { primaryPrice, primaryLabel, secondaryPrice } =
+    getPrimaryPricing(product);
+
+  const handleWhatsapp = () => {
+    openWhatsapp(buildWhatsappUrl(product, getBaseUrl()));
+  };
 
   return (
     <div className="px-4">
       <div className="justify-between mb-3 sm:flex">
-        <h1 className="text-2xl font-bold">{product.productName}</h1>
+        <h1 className="font-display text-2xl font-bold">
+          {product.productName}
+        </h1>
         <ProductCategories category={product.category} />
       </div>
-      <Separator className="my-2 border-gray-200 border-1" />
+      <Separator className="my-2" />
       <div>
         <p className="text-md text-gray-800">{product.description}</p>
       </div>
@@ -35,42 +52,61 @@ const InfoProduct = (props: InfoProductProps) => {
         </span>
       </div>
       <Separator className="my-4" />
-      <div className="mb-4">
-        <div className="flex items-baseline gap-x-2">
-          <h4 className="text-lg">Precio menudeo:</h4>
-          <p className="text-lg font-bold">{formatPrice(product.price)}</p>
-        </div>
-        <div className="flex items-baseline gap-x-2">
-          <h4 className="text-lg">Precio mayoreo:</h4>
-          <p className="text-lg font-bold">
-            {formatPrice(product.price_mayoreo)}
-          </p>
-        </div>
+
+      {/* Precios — mayoreo protagonista */}
+      <div className="mb-6">
+        {primaryPrice ? (
+          <>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              Precio {primaryLabel}
+            </p>
+            <p className="font-display text-3xl font-extrabold text-primary">
+              {primaryPrice}
+            </p>
+            {secondaryPrice && (
+              <p className="text-sm text-muted-foreground">
+                Menudeo {secondaryPrice}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-muted-foreground">Consultar precio</p>
+        )}
       </div>
-      <div className="flex items-center gap-5 sm:flex-row flex-col">
-        {/* <Button className="w-full" onClick={() => addItem(product)}>
-          <ShoppingCart size={20} />
-          <span>Comprar</span>
-        </Button> */}
+
+      {/* CTAs de conversión */}
+      <div className="flex flex-col gap-3">
         <Button
-          className="w-full bg-green-600 text-white text-md hover:bg-green-700"
-          onClick={() => {
-            const phoneNumber = "+524494056193";
-            const message = `Quiero más información de ${product.productName}`;
-            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
-              message
-            )}`;
-            window.open(whatsappUrl, "_blank");
-          }}
+          type="button"
+          onClick={handleWhatsapp}
+          className="w-full bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90 active:bg-whatsapp/80"
         >
-          <MessageCircle size={20} />
-          <span>Mándanos un mensaje en WhatsApp</span>
+          <MessageCircle className="size-5" />
+          Pedir por WhatsApp
         </Button>
-        <IconButton
-          onClick={() => addLovedItem(product)}
-          icon={<Heart size={20} strokeWidth={1.5} />}
-          className="transition duration-300 hover:fill-black cursor-pointer"
-        />
+        <div className="flex gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => addItem(product)}
+            className="flex-1"
+          >
+            <Plus className="size-4" />
+            Agregar a mi pedido
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            onClick={() => toggleLovedItem(product)}
+            aria-pressed={isLoved}
+            aria-label={isLoved ? "Quitar de favoritos" : "Agregar a favoritos"}
+          >
+            <Heart
+              className={cn("size-4", isLoved && "fill-current text-primary")}
+            />
+          </Button>
+        </div>
       </div>
     </div>
   );

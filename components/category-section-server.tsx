@@ -1,6 +1,6 @@
 import { ProductType } from "@/types/product";
 import { CategoryType } from "@/types/category";
-import ProductCard from "@/app/(routes)/category/[categorySlug]/components/product-card";
+import ProductCard from "@/components/shared/product-card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 

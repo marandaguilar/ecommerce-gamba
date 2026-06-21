@@ -1,14 +1,24 @@
 import type { Metadata } from "next";
-import { Urbanist } from "next/font/google";
+import { Plus_Jakarta_Sans, Sora } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import WhatsappFab from "@/components/whatsapp-fab";
 import { Toaster } from "sonner";
 import NextTopLoader from "nextjs-toploader";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { getAllCategories } from "@/lib/data/strapi";
 
-const urbanist = Urbanist({
-  variable: "--font-urbanist",
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const sora = Sora({
+  variable: "--font-sora",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -16,14 +26,18 @@ export const metadata: Metadata = {
   description: "Catálogo de productos de Gamba",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const categories = await getAllCategories();
+
   return (
-    <html lang="en">
-      <body className={`${urbanist.variable} antialiased pt-16`}>
+    <html lang="es">
+      <body
+        className={`${jakarta.variable} ${sora.variable} font-sans antialiased pt-16`}
+      >
         <NextTopLoader
           color="#2299DD"
           initialPosition={0.08}
@@ -39,10 +53,13 @@ export default function RootLayout({
           zIndex={1600}
           showAtBottom={false}
         />
-        <Navbar />
-        {children}
-        <Toaster />
-        <Footer />
+        <NuqsAdapter>
+          <Navbar categories={categories} />
+          {children}
+          <Toaster />
+          <Footer />
+          <WhatsappFab />
+        </NuqsAdapter>
       </body>
     </html>
   );
