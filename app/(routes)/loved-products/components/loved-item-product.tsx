@@ -3,7 +3,7 @@ import { Plus, X } from "lucide-react";
 import { useLovedProducts } from "@/hooks/use-loved-products";
 import { useCart } from "@/hooks/use-cart";
 import { ProductType } from "@/types/product";
-import { formatPrice } from "@/lib/formatPrice";
+import { getPrimaryPricing } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import ProductCategories from "@/components/shared/product-categories";
 import ProductImageMiniature from "@/components/shared/product-image-miniature";
@@ -17,12 +17,8 @@ const LovedItemProduct = (props: LovedItemProductProps) => {
   const { removeLovedItem } = useLovedProducts();
   const { addItem } = useCart();
 
-  // Mayorista-first (RN-1): el mayoreo es protagonista; si falta, el menudeo.
-  const mayoreo = formatPrice(product.price_mayoreo);
-  const menudeo = formatPrice(product.price);
-  const primaryPrice = mayoreo ?? menudeo;
-  const primaryLabel = mayoreo ? "Mayoreo" : "Menudeo";
-  const secondaryPrice = mayoreo ? menudeo : null;
+  const { primaryPrice, primaryLabel, secondaryPrice } =
+    getPrimaryPricing(product);
 
   return (
     <li className="flex py-6 border-b">

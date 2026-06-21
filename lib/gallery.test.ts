@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { resolveGalleryImages, hasGalleryImages } from "./gallery.ts";
+import { resolveGalleryImages } from "./gallery.ts";
 
 test("resolveGalleryImages devuelve las imágenes con url tal cual", () => {
   const images = [
@@ -31,11 +31,4 @@ test("resolveGalleryImages con undefined o null devuelve lista vacía", () => {
 
 test("resolveGalleryImages con lista vacía devuelve lista vacía", () => {
   assert.deepEqual(resolveGalleryImages([]), []);
-});
-
-test("hasGalleryImages es true solo si hay al menos una imagen con url", () => {
-  assert.equal(hasGalleryImages([{ id: 1, url: "https://cdn/a.jpg" }]), true);
-  assert.equal(hasGalleryImages([{ id: 1, url: "" }]), false);
-  assert.equal(hasGalleryImages([]), false);
-  assert.equal(hasGalleryImages(null), false);
 });

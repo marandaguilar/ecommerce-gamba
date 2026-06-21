@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, MessageCircle, Plus } from "lucide-react";
 
 import { ProductType } from "@/types/product";
 import { cn } from "@/lib/utils";
-import { formatPrice } from "@/lib/formatPrice";
-import { buildWhatsappUrl } from "@/lib/whatsapp";
+import { getPrimaryPricing } from "@/lib/pricing";
+import { buildWhatsappUrl, getBaseUrl, openWhatsapp } from "@/lib/whatsapp";
 import { useLovedProducts } from "@/hooks/use-loved-products";
 import { useCart } from "@/hooks/use-cart";
+import { useMounted } from "@/hooks/use-mounted";
 import { Button } from "@/components/ui/button";
 import ProductCategories from "@/components/shared/product-categories";
 
@@ -22,37 +22,22 @@ type ProductCardProps = {
 };
 
 const ProductCard = ({ product, priority = false, className }: ProductCardProps) => {
-  const { lovedItems, addLovedItem, removeLovedItem } = useLovedProducts();
+  const { lovedItems, toggleLovedItem } = useLovedProducts();
   const { addItem } = useCart();
 
   // Evita hydration mismatch: el estado de favorito (persistido en
   // localStorage) solo se refleja después de montar en el cliente.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
   const isLoved = mounted && lovedItems.some((item) => item.id === product.id);
 
   const firstImage = product.images?.[0];
   const productHref = `/product/${product.slug}`;
 
-  // Mayorista-first: el mayoreo es protagonista; si falta, el menudeo lo es.
-  const mayoreo = formatPrice(product.price_mayoreo);
-  const menudeo = formatPrice(product.price);
-  const primaryPrice = mayoreo ?? menudeo;
-  const primaryLabel = mayoreo ? "Mayoreo" : "Menudeo";
-  const secondaryPrice = mayoreo ? menudeo : null;
+  const { primaryPrice, primaryLabel, secondaryPrice } =
+    getPrimaryPricing(product);
 
-  const toggleLoved = () => {
-    if (isLoved) {
-      removeLovedItem(product);
-    } else {
-      addLovedItem(product);
-    }
-  };
-
-  const openWhatsapp = () => {
-    const baseUrl =
-      typeof window !== "undefined" ? window.location.origin : undefined;
-    window.open(buildWhatsappUrl(product, baseUrl), "_blank");
+  const handleWhatsapp = () => {
+    openWhatsapp(buildWhatsappUrl(product, getBaseUrl()));
   };
 
   return (
@@ -132,7 +117,7 @@ const ProductCard = ({ product, priority = false, className }: ProductCardProps)
             <Button
               type="button"
               size="sm"
-              onClick={openWhatsapp}
+              onClick={handleWhatsapp}
               className="flex-1 bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90 active:bg-whatsapp/80"
             >
               <MessageCircle className="size-4" />
@@ -142,7 +127,7 @@ const ProductCard = ({ product, priority = false, className }: ProductCardProps)
               type="button"
               size="icon"
               variant="outline"
-              onClick={toggleLoved}
+              onClick={() => toggleLovedItem(product)}
               aria-pressed={isLoved}
               aria-label={
                 isLoved ? "Quitar de favoritos" : "Agregar a favoritos"

@@ -2,14 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Filter, Search, Tag } from "lucide-react";
-import {
-  useQueryStates,
-  parseAsString,
-  parseAsBoolean,
-  parseAsInteger,
-} from "nuqs";
+import { useQueryStates } from "nuqs";
 
 import { CategoryType } from "@/types/category";
+import { listingParams } from "@/lib/listing-params";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Input } from "@/components/ui/input";
 import SortSelect from "@/components/listing/sort-select";
@@ -29,10 +25,10 @@ interface ListingControlsProps {
 const ListingControls = ({ categories }: ListingControlsProps) => {
   const [{ search, category, offer }, setParams] = useQueryStates(
     {
-      search: parseAsString.withDefault(""),
-      category: parseAsString.withDefault(""),
-      offer: parseAsBoolean.withDefault(false),
-      page: parseAsInteger.withDefault(1),
+      search: listingParams.search,
+      category: listingParams.category,
+      offer: listingParams.offer,
+      page: listingParams.page,
     },
     { shallow: false }
   );

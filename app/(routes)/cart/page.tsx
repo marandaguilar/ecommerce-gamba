@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 
 import { useCart } from "@/hooks/use-cart";
-import { buildOrderWhatsappUrl } from "@/lib/whatsapp";
+import { useMounted } from "@/hooks/use-mounted";
+import { buildOrderWhatsappUrl, getBaseUrl, openWhatsapp } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import EmptyState from "@/components/listing/empty-state";
@@ -16,14 +16,11 @@ export default function Page() {
 
   // Guard de hydration: el pedido vive en localStorage (persist); solo se
   // refleja tras montar para evitar mismatch servidor/cliente.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
   const orderItems = mounted ? items : [];
 
   const sendOrder = () => {
-    const baseUrl =
-      typeof window !== "undefined" ? window.location.origin : undefined;
-    window.open(buildOrderWhatsappUrl(orderItems, { baseUrl }), "_blank");
+    openWhatsapp(buildOrderWhatsappUrl(orderItems, { baseUrl: getBaseUrl() }));
   };
 
   return (

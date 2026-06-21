@@ -1,9 +1,10 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import { useQueryStates, parseAsStringLiteral, parseAsInteger } from "nuqs";
+import { useQueryStates } from "nuqs";
 
-import { SORT_KEYS, SORT_OPTIONS, DEFAULT_SORT } from "@/lib/sort";
+import { SORT_OPTIONS } from "@/lib/sort";
+import { listingParams } from "@/lib/listing-params";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,10 +19,7 @@ import {
  */
 const SortSelect = () => {
   const [{ sort }, setParams] = useQueryStates(
-    {
-      sort: parseAsStringLiteral(SORT_KEYS).withDefault(DEFAULT_SORT),
-      page: parseAsInteger.withDefault(1),
-    },
+    { sort: listingParams.sort, page: listingParams.page },
     { shallow: false }
   );
 

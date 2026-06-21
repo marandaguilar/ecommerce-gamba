@@ -12,6 +12,19 @@ function toWhatsappUrl(message: string): string {
   return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
 }
 
+/** Mensaje por defecto del canal (FAB, contacto general, pedido vacío). */
+const DEFAULT_GENERAL_MESSAGE = "Hola, quiero más información sobre sus productos";
+
+/** Origen actual del sitio para armar links a productos (solo en cliente). */
+export function getBaseUrl(): string | undefined {
+  return typeof window !== "undefined" ? window.location.origin : undefined;
+}
+
+/** Abre una URL de WhatsApp en una pestaña nueva. */
+export function openWhatsapp(url: string): void {
+  window.open(url, "_blank");
+}
+
 /** Campos mínimos que el mensaje necesita de un producto. */
 type WhatsappProduct = {
   productName: string;
@@ -33,12 +46,8 @@ export function buildWhatsappUrl(
   product: WhatsappProduct,
   baseUrl?: string
 ): string {
-  const message = buildProductMessage(product, baseUrl);
-  return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+  return toWhatsappUrl(buildProductMessage(product, baseUrl));
 }
-
-/** Mensaje por defecto del canal (FAB / contacto general). */
-const DEFAULT_GENERAL_MESSAGE = "Hola, quiero más información sobre sus productos";
 
 /**
  * URL de WhatsApp para contacto general (sin producto). Útil para el FAB
@@ -69,8 +78,6 @@ type OrderOptions = {
 };
 
 const DEFAULT_ORDER_INTRO = "Hola, quiero hacer este pedido:";
-const EMPTY_ORDER_MESSAGE =
-  "Hola, quiero más información sobre sus productos";
 
 function buildOrderItemLine(item: WhatsappOrderItem, baseUrl?: string): string {
   const priceValue = item.price_mayoreo ?? item.price;
@@ -90,7 +97,7 @@ export function buildOrderWhatsappUrl(
   options: OrderOptions = {}
 ): string {
   if (items.length === 0) {
-    return toWhatsappUrl(EMPTY_ORDER_MESSAGE);
+    return toWhatsappUrl(DEFAULT_GENERAL_MESSAGE);
   }
 
   const intro = options.intro ?? DEFAULT_ORDER_INTRO;

@@ -7,6 +7,8 @@ interface LovedProductsState {
     lovedItems: ProductType[]
     addLovedItem: (product: ProductType) => void
     removeLovedItem: (product: ProductType) => void
+    /** Agrega o quita según ya esté en favoritos (toggle del corazón). */
+    toggleLovedItem: (product: ProductType) => void
 }
 
 export const useLovedProducts = create<LovedProductsState>()(
@@ -29,6 +31,14 @@ export const useLovedProducts = create<LovedProductsState>()(
         const updatedLovedItem = currentLovedItem.filter((item) => item.id !== data.id)
         set({ lovedItems: updatedLovedItem })
         toast.success("Producto eliminado de favoritos")
+    },
+    toggleLovedItem: (data: ProductType) => {
+        const isLoved = get().lovedItems.some((item) => item.id === data.id)
+        if (isLoved) {
+            get().removeLovedItem(data)
+        } else {
+            get().addLovedItem(data)
+        }
     },
 }), {
     name: "loved-products",

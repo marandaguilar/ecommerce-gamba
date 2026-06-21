@@ -1,8 +1,9 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useQueryState, parseAsInteger } from "nuqs";
+import { useQueryState } from "nuqs";
 
+import { listingParams } from "@/lib/listing-params";
 import { Button } from "@/components/ui/button";
 
 interface PaginationControlsProps {
@@ -16,7 +17,7 @@ interface PaginationControlsProps {
 const PaginationControls = ({ pageCount }: PaginationControlsProps) => {
   const [page, setPage] = useQueryState(
     "page",
-    parseAsInteger.withDefault(1).withOptions({ shallow: false })
+    listingParams.page.withOptions({ shallow: false })
   );
 
   if (pageCount <= 1) return null;

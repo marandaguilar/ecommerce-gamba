@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 
 import { useLovedProducts } from "@/hooks/use-loved-products";
-import { buildOrderWhatsappUrl } from "@/lib/whatsapp";
+import { useMounted } from "@/hooks/use-mounted";
+import { buildOrderWhatsappUrl, getBaseUrl, openWhatsapp } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import EmptyState from "@/components/listing/empty-state";
@@ -15,19 +15,15 @@ export default function LovedProductsPage() {
   const { lovedItems } = useLovedProducts();
 
   // Guard de hydration: favoritos viven en localStorage (persist).
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
   const items = mounted ? lovedItems : [];
 
   const consultar = () => {
-    const baseUrl =
-      typeof window !== "undefined" ? window.location.origin : undefined;
-    window.open(
+    openWhatsapp(
       buildOrderWhatsappUrl(items, {
-        baseUrl,
+        baseUrl: getBaseUrl(),
         intro: "Hola, quiero consultar por estos productos:",
-      }),
-      "_blank"
+      })
     );
   };
 

@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 
 import { useCart } from "@/hooks/use-cart";
-import { formatPrice } from "@/lib/formatPrice";
+import { getPrimaryPricing } from "@/lib/pricing";
 import { ProductType } from "@/types/product";
 import ProductCategories from "@/components/shared/product-categories";
 import ProductImageMiniature from "@/components/shared/product-image-miniature";
@@ -14,12 +14,8 @@ const CartItem = (props: CartItemProps) => {
   const { product } = props;
   const { removeItem } = useCart();
 
-  // Mayorista-first (RN-1): el mayoreo es protagonista; si falta, el menudeo.
-  const mayoreo = formatPrice(product.price_mayoreo);
-  const menudeo = formatPrice(product.price);
-  const primaryPrice = mayoreo ?? menudeo;
-  const primaryLabel = mayoreo ? "Mayoreo" : "Menudeo";
-  const secondaryPrice = mayoreo ? menudeo : null;
+  const { primaryPrice, primaryLabel, secondaryPrice } =
+    getPrimaryPricing(product);
 
   return (
     <li className="flex py-6 border-b">

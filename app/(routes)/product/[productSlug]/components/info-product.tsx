@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Heart, MessageCircle, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { formatPrice } from "@/lib/formatPrice";
+import { getPrimaryPricing } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
-import { buildWhatsappUrl } from "@/lib/whatsapp";
+import { buildWhatsappUrl, getBaseUrl, openWhatsapp } from "@/lib/whatsapp";
 import { ProductType } from "@/types/product";
 import { useLovedProducts } from "@/hooks/use-loved-products";
 import { useCart } from "@/hooks/use-cart";
+import { useMounted } from "@/hooks/use-mounted";
 import ProductCategories from "@/components/shared/product-categories";
 
 export type InfoProductProps = {
@@ -20,32 +20,17 @@ export type InfoProductProps = {
 const InfoProduct = (props: InfoProductProps) => {
   const { product } = props;
   const { addItem } = useCart();
-  const { lovedItems, addLovedItem, removeLovedItem } = useLovedProducts();
+  const { lovedItems, toggleLovedItem } = useLovedProducts();
 
   // Guard de hydration: el favorito vive en localStorage (persist).
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
   const isLoved = mounted && lovedItems.some((item) => item.id === product.id);
 
-  // Mayorista-first (RN-1): el mayoreo es protagonista; si falta, el menudeo.
-  const mayoreo = formatPrice(product.price_mayoreo);
-  const menudeo = formatPrice(product.price);
-  const primaryPrice = mayoreo ?? menudeo;
-  const primaryLabel = mayoreo ? "Mayoreo" : "Menudeo";
-  const secondaryPrice = mayoreo ? menudeo : null;
+  const { primaryPrice, primaryLabel, secondaryPrice } =
+    getPrimaryPricing(product);
 
-  const toggleLoved = () => {
-    if (isLoved) {
-      removeLovedItem(product);
-    } else {
-      addLovedItem(product);
-    }
-  };
-
-  const openWhatsapp = () => {
-    const baseUrl =
-      typeof window !== "undefined" ? window.location.origin : undefined;
-    window.open(buildWhatsappUrl(product, baseUrl), "_blank");
+  const handleWhatsapp = () => {
+    openWhatsapp(buildWhatsappUrl(product, getBaseUrl()));
   };
 
   return (
@@ -93,7 +78,7 @@ const InfoProduct = (props: InfoProductProps) => {
       <div className="flex flex-col gap-3">
         <Button
           type="button"
-          onClick={openWhatsapp}
+          onClick={handleWhatsapp}
           className="w-full bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90 active:bg-whatsapp/80"
         >
           <MessageCircle className="size-5" />
@@ -113,7 +98,7 @@ const InfoProduct = (props: InfoProductProps) => {
             type="button"
             size="icon"
             variant="outline"
-            onClick={toggleLoved}
+            onClick={() => toggleLovedItem(product)}
             aria-pressed={isLoved}
             aria-label={isLoved ? "Quitar de favoritos" : "Agregar a favoritos"}
           >

@@ -20,8 +20,3 @@ export function resolveGalleryImages(
     .filter((image): image is ImageType => Boolean(image?.url))
     .map((image) => ({ id: image.id, url: image.url }));
 }
-
-/** `true` si hay al menos una imagen renderizable. */
-export function hasGalleryImages(images?: ImageType[] | null): boolean {
-  return resolveGalleryImages(images).length > 0;
-}

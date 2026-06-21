@@ -1,5 +1,4 @@
 "use client";
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Heart, MessageCircle, ShoppingCart } from "lucide-react";
@@ -9,9 +8,10 @@ import ItemsMenuMobile from "./items-menu-mobile";
 import HeaderSearch from "./header-search";
 import { useLovedProducts } from "@/hooks/use-loved-products";
 import { useCart } from "@/hooks/use-cart";
+import { useMounted } from "@/hooks/use-mounted";
 import { CategoryType } from "@/types/category";
 import { cn } from "@/lib/utils";
-import { buildGeneralWhatsappUrl } from "@/lib/whatsapp";
+import { buildGeneralWhatsappUrl, openWhatsapp } from "@/lib/whatsapp";
 
 interface NavbarProps {
   categories: CategoryType[];
@@ -24,14 +24,9 @@ const Navbar = ({ categories }: NavbarProps) => {
 
   // Guard de hydration: los contadores vienen de estado persistido en
   // localStorage; solo se reflejan tras montar para evitar mismatch.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
   const lovedCount = mounted ? lovedItems.length : 0;
   const cartCount = mounted ? items.length : 0;
-
-  const openWhatsapp = () => {
-    window.open(buildGeneralWhatsappUrl(), "_blank");
-  };
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
@@ -58,7 +53,7 @@ const Navbar = ({ categories }: NavbarProps) => {
           <button
             type="button"
             aria-label="Contactar por WhatsApp"
-            onClick={openWhatsapp}
+            onClick={() => openWhatsapp(buildGeneralWhatsappUrl())}
           >
             <MessageCircle
               size={28}
