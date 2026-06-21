@@ -40,41 +40,44 @@ test("buildGeneralWhatsappUrl codifica un mensaje personalizado", () => {
 
 test("buildOrderWhatsappUrl apunta al teléfono configurado", () => {
   const url = buildOrderWhatsappUrl([
-    { productName: "Cloro", slug: "cloro", price_mayoreo: 100, price: 120 },
+    { productName: "Cloro", slug: "cloro" },
   ]);
   assert.ok(url.startsWith(`https://wa.me/${WHATSAPP_PHONE}?text=`));
 });
 
 test("buildOrderWhatsappUrl incluye los nombres de todos los ítems", () => {
   const url = buildOrderWhatsappUrl([
-    { productName: "Cloro", slug: "cloro", price_mayoreo: 100, price: 120 },
-    { productName: "Jabón líquido", slug: "jabon", price_mayoreo: 50, price: 60 },
+    { productName: "Cloro", slug: "cloro" },
+    { productName: "Jabón líquido", slug: "jabon" },
   ]);
   const text = decodeURIComponent(url);
   assert.ok(text.includes("Cloro"));
   assert.ok(text.includes("Jabón líquido"));
 });
 
-test("buildOrderWhatsappUrl usa el precio mayoreo cuando existe", () => {
+test("buildOrderWhatsappUrl muestra la cantidad y la unidad elegidas", () => {
   const url = buildOrderWhatsappUrl([
-    { productName: "Cloro", slug: "cloro", price_mayoreo: 100, price: 120 },
+    { productName: "Cloro", slug: "cloro", quantity: 3, unidad: "kg" },
+    { productName: "Aceite", slug: "aceite", quantity: 1, unidad: "litro" },
   ]);
   const text = decodeURIComponent(url);
-  assert.ok(text.includes("100"));
-  assert.ok(!text.includes("120"));
+  assert.ok(text.includes("3 kg"));
+  assert.ok(text.includes("1 litro"));
 });
 
-test("buildOrderWhatsappUrl cae a menudeo cuando falta el mayoreo", () => {
+test("buildOrderWhatsappUrl no incluye ningún precio en el mensaje", () => {
   const url = buildOrderWhatsappUrl([
-    { productName: "Cloro", slug: "cloro", price_mayoreo: null, price: 120 },
+    { productName: "Cloro", slug: "cloro", quantity: 2, unidad: "pieza" },
   ]);
   const text = decodeURIComponent(url);
-  assert.ok(text.includes("120"));
+  assert.ok(text.includes("2 piezas"));
+  // El precio quedó fuera del pedido por WhatsApp (se acuerda al contactar).
+  assert.ok(!/\$|MXN|EUR/.test(text));
 });
 
 test("buildOrderWhatsappUrl incluye los links cuando se pasa baseUrl", () => {
   const url = buildOrderWhatsappUrl(
-    [{ productName: "Cloro", slug: "cloro", price_mayoreo: 100, price: 120 }],
+    [{ productName: "Cloro", slug: "cloro" }],
     { baseUrl: "https://gamba.com" }
   );
   assert.ok(url.includes(encodeURIComponent("https://gamba.com/product/cloro")));
@@ -89,7 +92,7 @@ test("buildOrderWhatsappUrl con lista vacía devuelve una URL válida", () => {
 
 test("buildOrderWhatsappUrl codifica un intro personalizado", () => {
   const url = buildOrderWhatsappUrl(
-    [{ productName: "Cloro", slug: "cloro", price_mayoreo: 100 }],
+    [{ productName: "Cloro", slug: "cloro" }],
     { intro: "Estos son mis favoritos 👋" }
   );
   assert.ok(url.includes(encodeURIComponent("Estos son mis favoritos 👋")));

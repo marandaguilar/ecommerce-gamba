@@ -39,6 +39,11 @@ function buildProductPopulate(includeDescription: boolean = false): URLSearchPar
   params.append('populate[category][fields][1]', 'slug');
   params.append('populate[category][fields][2]', 'id');
 
+  // Unidades de venta (componente repetible): necesarias para la unidad por
+  // defecto en cards/favoritos al agregar al pedido.
+  params.append('populate[unidades][fields][0]', 'unidad');
+  params.append('populate[unidades][fields][1]', 'predeterminada');
+
   // Only fetch needed product fields
   params.append('fields[0]', 'id');
   params.append('fields[1]', 'productName');
@@ -159,6 +164,10 @@ export async function getProductBySlug(slug: string): Promise<ProductType | null
   params.append('populate[category][fields][0]', 'categoryName');
   params.append('populate[category][fields][1]', 'slug');
   params.append('populate[category][fields][2]', 'id');
+
+  // Unidades de venta (componente repetible) para el selector del detalle.
+  params.append('populate[unidades][fields][0]', 'unidad');
+  params.append('populate[unidades][fields][1]', 'predeterminada');
 
   // Filter by slug
   params.append('filters[slug][$eq]', slug);

@@ -3,7 +3,8 @@
  * WhatsApp es el canal de conversión oficial (Spec §4.4): este helper arma
  * el mensaje prellenado por producto, reutilizable desde card y detalle.
  */
-import { formatPrice } from "./formatPrice.ts";
+import { formatUnitQuantity } from "./units.ts";
+import type { SaleUnit } from "@/types/product";
 
 /** Número de destino (solo dígitos, formato wa.me). */
 export const WHATSAPP_PHONE = "524494056193";
@@ -63,11 +64,10 @@ export function buildGeneralWhatsappUrl(
 export type WhatsappOrderItem = {
   productName: string;
   slug: string;
-  /** Mayorista-first (RN-1): se muestra el mayoreo y, si falta, el menudeo. */
-  price_mayoreo?: number | null;
-  price?: number | null;
-  /** Reservado para un futuro modelo con cantidades (RF-14 "si aplica"). */
+  /** Cantidad solicitada (RF-14): se renderiza junto a la unidad si existe. */
   quantity?: number;
+  /** Unidad de venta elegida (pieza/litro/kg); null si el producto no la usa. */
+  unidad?: SaleUnit | null;
 };
 
 type OrderOptions = {
@@ -80,11 +80,15 @@ type OrderOptions = {
 const DEFAULT_ORDER_INTRO = "Hola, quiero hacer este pedido:";
 
 function buildOrderItemLine(item: WhatsappOrderItem, baseUrl?: string): string {
-  const priceValue = item.price_mayoreo ?? item.price;
-  const price = formatPrice(priceValue);
-  const qty = item.quantity && item.quantity > 1 ? ` x${item.quantity}` : "";
+  const quantity = item.quantity && item.quantity > 0 ? item.quantity : 1;
+  // Con unidad mostramos "3 kg"; sin unidad mantenemos el legado "x3".
+  const qty = item.unidad
+    ? ` (${formatUnitQuantity(quantity, item.unidad)})`
+    : quantity > 1
+      ? ` x${quantity}`
+      : "";
   const link = baseUrl ? ` ${baseUrl}/product/${item.slug}` : "";
-  return `• ${item.productName}${qty}${price ? ` — ${price}` : ""}${link}`;
+  return `• ${item.productName}${qty}${link}`;
 }
 
 /**

@@ -6,6 +6,16 @@ export type ImageType = {
     url: string
 }
 
+/** Unidad de venta de un producto (componente repetible `unidades` en Strapi). */
+export type SaleUnit = 'pieza' | 'litro' | 'kg'
+
+export type ProductUnit = {
+    id: number
+    unidad: SaleUnit
+    /** Marca la unidad que sale seleccionada por defecto en el detalle. */
+    predeterminada?: boolean | null
+}
+
 export type ProductType = {
     id: number
     documentId?: string
@@ -20,6 +30,8 @@ export type ProductType = {
     price_mayoreo: number
     images?: ImageType[]
     category?: CategoryType
+    /** Unidades de venta disponibles para este producto (puede venir vacío). */
+    unidades?: ProductUnit[]
     createdAt?: string
     updatedAt?: string
 }
