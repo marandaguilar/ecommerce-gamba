@@ -20,7 +20,12 @@ export default function Page() {
   const orderItems = mounted ? items : [];
 
   const sendOrder = () => {
-    openWhatsapp(buildOrderWhatsappUrl(orderItems, { baseUrl: getBaseUrl() }));
+    const orderLines = orderItems.map((item) => ({
+      ...item,
+      quantity: item.cartQuantity,
+      unidad: item.cartUnit,
+    }));
+    openWhatsapp(buildOrderWhatsappUrl(orderLines, { baseUrl: getBaseUrl() }));
   };
 
   return (
@@ -40,7 +45,7 @@ export default function Page() {
         <>
           <ul>
             {orderItems.map((item) => (
-              <CartItem key={item.id} product={item} />
+              <CartItem key={`${item.id}-${item.cartUnit ?? "sin-unidad"}`} product={item} />
             ))}
           </ul>
 

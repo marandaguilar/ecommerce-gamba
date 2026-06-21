@@ -1,21 +1,17 @@
 import { X } from "lucide-react";
 
-import { useCart } from "@/hooks/use-cart";
-import { getPrimaryPricing } from "@/lib/pricing";
-import { ProductType } from "@/types/product";
+import { CartItem as CartItemType, useCart } from "@/hooks/use-cart";
+import { formatUnitQuantity } from "@/lib/units";
 import ProductCategories from "@/components/shared/product-categories";
 import ProductImageMiniature from "@/components/shared/product-image-miniature";
 
 interface CartItemProps {
-  product: ProductType;
+  product: CartItemType;
 }
 
 const CartItem = (props: CartItemProps) => {
   const { product } = props;
   const { removeItem } = useCart();
-
-  const { primaryPrice, primaryLabel, secondaryPrice } =
-    getPrimaryPricing(product);
 
   return (
     <li className="flex py-6 border-b">
@@ -28,23 +24,14 @@ const CartItem = (props: CartItemProps) => {
           <h2 className="text-base font-bold sm:text-lg">
             {product.productName}
           </h2>
-          {primaryPrice ? (
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                {primaryLabel}
-              </p>
-              <p className="font-display text-lg font-extrabold text-primary">
-                {primaryPrice}
-              </p>
-              {secondaryPrice && (
-                <p className="text-xs text-muted-foreground">
-                  Menudeo {secondaryPrice}
-                </p>
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">Consultar precio</p>
-          )}
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              Cantidad
+            </p>
+            <p className="font-display text-lg font-extrabold text-primary">
+              {formatUnitQuantity(product.cartQuantity, product.cartUnit)}
+            </p>
+          </div>
           <div className="mt-1">
             <ProductCategories category={product.category} />
           </div>
@@ -52,7 +39,7 @@ const CartItem = (props: CartItemProps) => {
         <button
           type="button"
           aria-label={`Quitar ${product.productName} del pedido`}
-          onClick={() => removeItem(product.id)}
+          onClick={() => removeItem(product.id, product.cartUnit)}
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-white shadow-md transition hover:scale-110"
         >
           <X size={18} />
